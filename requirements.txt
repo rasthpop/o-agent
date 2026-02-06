@@ -1,0 +1,24 @@
+anthropic==0.39.0
+
+# Agent orchestration
+langgraph==0.2.16
+langchain==0.3.7
+langchain-core==0.3.19
+
+# OSINT / Search
+tavily-python==0.5.0
+requests==2.32.3
+beautifulsoup4==4.12.3
+playwright==1.48.0
+
+# Data handling
+pydantic==2.9.2
+python-dotenv==1.0.1
+pandas==2.2.3
+
+# Graph / relationships (optional but very useful)
+networkx==3.3
+
+# Logging & utilities
+rich==13.9.2
+tenacity==9.0.0
