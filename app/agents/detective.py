@@ -9,9 +9,9 @@ from tools.registry import register_tools
 import json
 from typing import Dict, Any, List
 # from .base_agent import Agent  # Importing your base Agent class
-from tools.web_search import WebSearchTool
-from tools.web_scraper import WebScraperTool
-from tools.osm_search import OSMLookupTool
+from app.tools.web_search import WebSearchTool
+from app.tools.web_scraper import WebScraperTool
+from app.tools.osm_search import OSMLookupTool
 
 
 class AgentMessage(BaseModel):
