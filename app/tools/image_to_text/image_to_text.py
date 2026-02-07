@@ -3,8 +3,31 @@ import json
 from anthropic import Anthropic
 from app.config import settings
 import app.tools.image_to_text.preprocessing as preprocessing
+import re
 
 client = Anthropic(api_key=settings.anthropic_api_key)
+
+def safe_json_load(raw_text):
+    try:
+        return json.loads(raw_text)
+    except:
+        pass
+
+    # try extracting JSON from markdown
+    match = re.search(r'\{.*\}', raw_text, re.DOTALL)
+
+    if match:
+        try:
+            return json.loads(match.group())
+        except:
+            pass
+
+    return {
+        "parse_error": True,
+        "raw_response": raw_text
+    }
+
+
 
 # print(settings.anthropic_api_key)
 # ---------- PROMPTS ----------
@@ -41,13 +64,7 @@ def _run_claude_vision(image_data, media_type, prompt):
 
     raw = response.content[0].text
 
-    try:
-        return json.loads(raw)
-    except Exception:
-        return {
-            "parse_error": True,
-            "raw_response": raw
-        }
+    return safe_json_load(raw)
 
 
 # ---------- MAIN FUNCTION ----------
@@ -112,3 +129,6 @@ def final_run(path) -> tuple[dict, dict]:
     )
 
     return features, img
+
+
+print(final_run("app/tools/image_to_text/testing.png"))

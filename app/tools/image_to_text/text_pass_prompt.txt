@@ -4,7 +4,7 @@ STRICT RULES:
 - Extract ONLY visible textual or language-based evidence.
 - DO NOT infer country or region.
 - If unsure → return null.
-- Always include confidence 0-1.
+- Always include confidence integer, from values 0 to 5 where 0 is little to no confidence and 5 is really confident.
 - Always quote observed evidence.
 
 Return ONLY valid JSON.
@@ -13,29 +13,29 @@ Schema:
 
 {
   "signage_text": [
-    {"value": str, "confidence": float}
+    {"value": str, "confidence": int}
   ],
   "languages": [
-    {"value": str, "confidence": float}
+    {"value": str, "confidence": int}
   ],
   "alphabets": [
-    {"type": str, "confidence": float}
+    {"type": str, "confidence": int}
   ],
   "phone_numbers": [
-    {"raw": str, "country_code_guess": str|null, "confidence": float}
+    {"raw": str, "country_code_guess": str|null, "confidence": int}
   ],
   "domains": [
-    {"value": str, "confidence": float}
+    {"value": str, "confidence": int}
   ],
   "license_plates": [
     {
       "color_pattern": str|null,
       "format_pattern": str|null,
-      "confidence": float
+      "confidence": int
     }
   ],
   "brand_names": [
-    {"value": str, "confidence": float}
+    {"value": str, "confidence": int}
   ],
   "other_unidentified": [{"value": str}]
 }

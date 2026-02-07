@@ -4,7 +4,7 @@ STRICT RULES:
 - Extract ONLY physical and environmental features.
 - Ignore ALL text.
 - DO NOT infer country or region.
-- Always include confidence 0-1.
+- Always include confidence integer, from values 0 to 5 where 0 is little to no confidence and 5 is really confident.
 - Use null if feature is not visible.
 
 Return ONLY valid JSON.
@@ -17,7 +17,7 @@ Schema:
     "vegetation": str|null,
     "terrain": str|null,
     "urban_density": str|null,
-    "confidence": float
+    "confidence": int
   },
 
   "road_features": {
@@ -25,7 +25,7 @@ Schema:
     "pavement_type": str|null,
     "driving_side_hint": str|null,
     "shoulder_style": str|null,
-    "confidence": float
+    "confidence": int
   },
 
   "infrastructure": {
@@ -34,26 +34,26 @@ Schema:
     "guardrails": str|null,
     "street_lights": str|null,
     "sidewalks": str|null,
-    "confidence": float
+    "confidence": int
   },
 
   "architecture": {
     "building_materials": str|null,
     "roof_styles": str|null,
     "density": str|null,
-    "confidence": float
+    "confidence": int
   },
 
   "vehicles": {
     "brands": [str],
     "taxi_patterns": str|null,
-    "confidence": float
+    "confidence": int
   },
 
   "astronomy": {
     "shadow_direction": str|null,
     "sun_height": str|null,
-    "confidence": float
+    "confidence": int
   },
   "other_unidentified": [{"value": str}]
 }
