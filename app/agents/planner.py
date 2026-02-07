@@ -116,10 +116,8 @@ class PlannerAgent:
             ],
         )
 
-        # Extract the response text
         response_text = response.content[0].text
 
-        # Parse JSON from response
         plan = extract_json_from_response(response_text)
 
         logger.info("Refinement plan generated with %d steps", len(plan.get("next_steps", [])))

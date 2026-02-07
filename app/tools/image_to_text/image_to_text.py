@@ -37,7 +37,6 @@ def _run_claude_vision(image_data, media_type, prompt):
     return extract_json_from_response(raw)
 
 
-# ---------- MAIN FUNCTION ----------
 
 def image_to_geoguessr_features(image_base64, media_type="image/jpeg"):
     """
@@ -46,21 +45,17 @@ def image_to_geoguessr_features(image_base64, media_type="image/jpeg"):
     Returns structured JSON with hallucination control.
     """
 
-    # ----- PASS 1: TEXTUAL -----
     textual_features = _run_claude_vision(
         image_base64,
         media_type,
         TEXT_PASS_PROMPT
     )
-
-    # ----- PASS 2: ENVIRONMENT -----
     environment_features = _run_claude_vision(
         image_base64,
         media_type,
         ENV_PASS_PROMPT
     )
 
-    # ----- MERGE -----
     result = {
         "textual_features": textual_features,
         "environment_features": environment_features,
