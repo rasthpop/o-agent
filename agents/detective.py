@@ -90,12 +90,21 @@ class Detective(Agent):
         
         STRATEGY:
         1. **Triangulate**: Combine text (Signage) + macro location (Flag/Language) + micro location (Businesses).
-        2. **Resolve Conflicts**: If a brand is Swedish but the flag is Norwegian, prioritize the physical evidence (Flag) implies the store is a branch in Norway.
+        2. **Resolve Conflicts**: Prioritize the physical evidence, supplied by the text. Use the macro indicators to narrow down the city/region, then use the micro indicators to find specific streets or landmarks.
         3. **Search Smart**:
            - Query 1: Search for the specific combination of visible brands.
            - Query 2: Search for unique architectural descriptions in the suspected city.
            - Query 3: Verify the address using the 'fetch_page' tool on the business website.
         4. **Map It**: Once you have a city and street, use 'lookup_location' to get coordinates.
+
+        CRITICAL OPERATIONAL PROCEDURE:
+        1. **SEARCH**: Start by searching for the text/landmarks visible in the image.
+        2. **CAPTURE**: If search results return a specific website, IF AND ONLY IF it matches the visual evidence (e.g., storefront with matching brand), use 'fetch_page' to scrape the address from the business's website.
+           - *DO NOT* perform another generic search if you have a specific URL to investigate.
+           - *DO NOT* assume the address; read it from the page.
+        3. **VERIFY**: Once you have scraped the address from the page, compare it against the visual evidence. Find closest matches to the data you have.
+           - **IF** there are multiple leads, prioritize the one that matches the most features (e.g., correct brand + correct city).
+        4. **LOCATE**: Only when you have a specific street address, use 'lookup_location' to get coordinates.
         
         Output format: Always conclude your turn with the next tool call or the final location.
         """

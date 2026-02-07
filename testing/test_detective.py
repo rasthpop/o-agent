@@ -115,7 +115,7 @@ def run_interactive_test():
     # Initialize conversation history
     messages = [{"role": "user", "content": initial_message}]
 
-    MAX_TURNS = 2
+    MAX_TURNS = 10
     turn_count = 0
 
     print(f"\n💬 USER PROMPT:\n{initial_message[:100]}...\n")
