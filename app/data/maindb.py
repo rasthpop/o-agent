@@ -132,3 +132,6 @@ class InvestigationDB:
     def get_metadata(self) -> Dict[str, Any]:
         """Get investigation metadata."""
         return self.metadata
+    
+    def get_state_snapshot(self):
+        return self.initial_text, self.metadata, self.wrongs, self.context, self.history_of_validated_searches

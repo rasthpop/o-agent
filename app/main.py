@@ -1,5 +1,5 @@
 from app.data.maindb import InvestigationDB
-from app.tools.image_to_text.image_to_text import final_run
+from app.tools.image_to_text.image_to_text import extract_json_description_and_metadata
 from app.agents.planner import PlannerAgent
 from anthropic import Anthropic
 from app.config import settings
@@ -11,19 +11,22 @@ def main():
 def run_test_loop():
 
 
-    PATH = "app/tools/image_to_text/testing.png"
+    PATH = "app/images/norway2.HEIC"
     print(f"Running test loop with image: {PATH}")
-    features, img = final_run(PATH)
+    features, img, metadata = extract_json_description_and_metadata(PATH)
     print("Extracted features:")
     print(features)
+    print("Extracted metadata:")
+    print(metadata)
 
 
     db = InvestigationDB(
         initial_photo=PATH,
-        initial_text=features
+        initial_text=features,
+        metadata=metadata
     )
 
-    planner = PlannerAgent(client=client, model=settings.default_model)
+    planner = PlannerAgent(client, db, model=settings.default_model)
     planner_response = planner.plan(db)
     print("Planner response:")
     print(planner_response)

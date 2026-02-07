@@ -4,6 +4,9 @@ from datetime import datetime
 import json
 from typing import Any, Dict, Optional
 
+# Register HEIF opener once at module level to handle all HEIC/HEIF formats
+register_heif_opener()
+
 
 
 
@@ -101,39 +104,51 @@ def normalize_exif(exif: Dict[int, Any]) -> Dict[str, Any]:
 
 
 def extract_image_metadata_for_agent(image_path: str) -> Dict[str, Any]:
-    is_heif = image_path[-4:] == "HEIC" 
-    exif_keys = [34853, 34665]
-    
-    if is_heif:
-        register_heif_opener()
-    img = Image.open(image_path)
+    """Extract metadata from any image file format.
 
+    Supports JPEG, PNG, HEIC, HEIF, and other formats supported by PIL.
+    Metadata extraction works for formats that contain EXIF data.
 
-    raw = {}
-    img_exif = img.getexif()
-    for key in exif_keys:
-        exifcode = img_exif.get_ifd(key)
-        if exifcode:
-            raw[key] = exifcode
-    
-    normalized = normalize_exif(raw)
+    Args:
+        image_path: Path to the image file
 
-    if normalized:
-        return {
-            "image_metadata": normalized,
-            "agent_notes": {
-                "treat_metadata_as_probabilistic": True,
-                "gps_can_be_spoofed": True,
-                "timestamps_can_be_modified": True
+    Returns:
+        Dictionary containing image metadata and agent notes, or empty dict if no metadata
+    """
+    exif_keys = [34853, 34665]  # GPS and EXIF IFD keys
+
+    try:
+        img = Image.open(image_path)
+
+        raw = {}
+        img_exif = img.getexif()
+        for key in exif_keys:
+            exifcode = img_exif.get_ifd(key)
+            if exifcode:
+                raw[key] = exifcode
+
+        normalized = normalize_exif(raw)
+
+        if normalized:
+            return {
+                "image_metadata": normalized,
+                "agent_notes": {
+                    "treat_metadata_as_probabilistic": True,
+                    "gps_can_be_spoofed": True,
+                    "timestamps_can_be_modified": True
+                }
             }
-        }
-    
+    except Exception as e:
+        # If metadata extraction fails, return empty dict
+        # The image can still be processed without metadata
+        print(f"Warning: Could not extract metadata from {image_path}: {e}")
+
     return {}
 
 #testing
 if __name__ == "__main__":
 
-    path = "./app/tools/image_to_text/col.HEIC"
+    path = "./app/images/norway2.HEIC"
     data = extract_image_metadata_for_agent(path)
 
     print(json.dumps(data, indent=2))

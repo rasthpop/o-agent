@@ -2,7 +2,7 @@
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
+from anthropic import Anthropic
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
@@ -36,3 +36,9 @@ Always verify your answers before presenting them to the user.""",
 
 # Global settings instance
 settings = Settings()
+
+
+def create_anthropic_client():
+    """Factory function to create an Anthropic client using settings."""
+    
+    return Anthropic(api_key=settings.anthropic_api_key)
