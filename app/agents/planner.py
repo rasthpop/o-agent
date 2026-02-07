@@ -21,7 +21,7 @@ class PlannerAgent:
     Uses multi-pass architecture to gather different perspectives on the investigation.
     """
 
-    def __init__(self, client: Anthropic, model: str = "claude-opus-4-6", db: InvestigationDB = None):
+    def __init__(self, client: Anthropic, db: InvestigationDB,model: str = "claude-opus-4-6"):
         """Initialize planner agent.
         
         Args:
@@ -30,10 +30,10 @@ class PlannerAgent:
         """
         self.client = client
         self.model = model
+        self.db = db
 
     def plan(
         self,
-        investigation_db: InvestigationDB,
         iteration: int = 0,
     ) -> Dict[str, Any]:
         """Generate or refine an investigation plan using multi-pass approach.
@@ -48,9 +48,9 @@ class PlannerAgent:
         logger.info("Planning for iteration %d", iteration)
         
         if iteration == 0:
-            return self._plan_iteration_zero(investigation_db)
+            return self._plan_iteration_zero(self.db)
         else:
-            return self._plan_iteration_n(investigation_db, iteration)
+            return self._plan_iteration_n(self.db, iteration)
 
 
 
@@ -100,7 +100,7 @@ INITIAL TEXT EXTRACTION:
 {initial_text}
 
 METADATA:
-{json.dumps(metadata, indent=2)}
+{json.dumps(metadata or "NO METADATA", indent=2)}
 
 Analyze the completeness of this information and structure a detailed investigation plan for the Detective Agent. Focus on what needs to be investigated to identify the location or subject."""
 
@@ -177,7 +177,7 @@ INITIAL TEXT EXTRACTION:
 METADATA:
 {json.dumps(metadata, indent=2)}
 
-INCORRECT GUESSES/CORRECTIONS:
+INCORRECT GUESSES:
 {json.dumps(wrongs, indent=2)}
 
 USER CONTEXT HINTS:
