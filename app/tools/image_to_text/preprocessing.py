@@ -1,4 +1,4 @@
-from PIL import Image, ImageOps, ImageEnhance
+from PIL import Image, ImageEnhance
 
 
 def resize_longest_side(img, target=1024):
@@ -14,7 +14,7 @@ def resize_longest_side(img, target=1024):
 def preprocess_image(path):
 
     img = Image.open(path)
-    img = ImageOps.exif_transpose(img)
+    metadata = img._getexif()
     enhancer = ImageEnhance.Contrast(img)
     img = enhancer.enhance(1.1)
     img = resize_longest_side(img)
@@ -24,3 +24,5 @@ def preprocess_image(path):
     img.save((final_path := "app/tools/image_to_text/preprocessed_image.jpg"), quality=95)
     return final_path, img
 
+if __name__ == "__main__":
+    print(preprocess_image("./tools/image_to_text/testing.jpeg"))
