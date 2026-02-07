@@ -20,7 +20,7 @@ def preprocess_image(path):
     img = resize_longest_side(img)
     img = img.convert("RGB")
 
-    metadata = img.info
-    img.save("tools/image_to_text/preprocessed_image.jpg", quality=95)
-    return img, metadata
+
+    img.save((final_path := "app/tools/image_to_text/preprocessed_image.jpg"), quality=95)
+    return final_path, img
 
