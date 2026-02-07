@@ -131,4 +131,4 @@ def final_run(path) -> tuple[dict, dict]:
     return features, img
 
 
-print(final_run("app/tools/image_to_text/testing.png"))
+# print(final_run("app/tools/image_to_text/testing.png"))
