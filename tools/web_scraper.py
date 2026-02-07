@@ -1,6 +1,6 @@
 import trafilatura
 from typing import Any
-from base_tool import BaseTool, ToolResult
+from .base_tool import BaseTool, ToolResult
 
 class WebScraperTool(BaseTool):
     """
