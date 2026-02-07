@@ -49,9 +49,9 @@ class PlannerAgent:
         logger.info("Planning for iteration %d", iteration)
         
         if iteration == 0:
-            return self._plan_iteration_zero(self.db)
+            return self._plan_iteration_zero()
         else:
-            return self._plan_iteration_n(self.db, iteration)
+            return self._plan_iteration_n(iteration)
 
 
 

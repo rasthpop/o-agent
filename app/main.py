@@ -11,7 +11,7 @@ def main():
 def run_test_loop():
 
 
-    PATH = "app/images/col.jpg"
+    PATH = "app/images/norway2.HEIC"
     print(f"Running test loop with image: {PATH}")
     features, img, metadata = extract_json_description_and_metadata(PATH)
     print("Extracted features:")
@@ -20,16 +20,16 @@ def run_test_loop():
     print(metadata)
 
 
-    # db = InvestigationDB(
-    #     initial_photo=PATH,
-    #     initial_text=features,
-    #     metadata=metadata
-    # )
+    db = InvestigationDB(
+        initial_photo=PATH,
+        initial_text=features,
+        metadata=metadata
+    )
 
-    # planner = PlannerAgent(client=client, model=settings.default_model)
-    # planner_response = planner.plan(db)
-    # print("Planner response:")
-    # print(planner_response)
+    planner = PlannerAgent(client, db, model=settings.default_model)
+    planner_response = planner.plan(db)
+    print("Planner response:")
+    print(planner_response)
 
 
 if __name__ == "__main__":
