@@ -1,9 +1,8 @@
 from typing import Any
 
 import anthropic
-from pydantic import BaseModel, Field
-
 from config import settings
+from pydantic import BaseModel, Field
 from tools.base_tool import BaseTool
 from tools.registry import register_tools
 
