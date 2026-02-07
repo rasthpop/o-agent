@@ -1,24 +1,20 @@
-import base64
+"""Planner agent"""
 import json
 import logging
-import re
 from typing import Any, Dict
-
 from anthropic import Anthropic
-
 from app.data.maindb import InvestigationDB
+from app.utils.claude_to_json import extract_json_from_response
 
 logger = logging.getLogger(__name__)
 
 
 
 class PlannerAgent:
-    """Multi-pass planner that builds investigation plans based on iteration count.
+    """Planner agent that builds investigation plans based on current system state.
     
     - Iteration 0: Runs initial planning passes to create comprehensive plan
-    - Iteration N: Runs refinement passes based on findings
-    
-    Uses multi-pass architecture to gather different perspectives on the investigation.
+    - Iteration >0: Runs refinement passes based on findings
     """
 
     def __init__(self, client: Anthropic, db: InvestigationDB,model: str = "claude-opus-4-6"):
@@ -27,6 +23,7 @@ class PlannerAgent:
         Args:
             client: Anthropic API client.
             model: Model name to use for planning.
+            db: Investigation system database with current state and findings.
         """
         self.client = client
         self.model = model
@@ -39,12 +36,11 @@ class PlannerAgent:
         """Generate or refine an investigation plan using multi-pass approach.
         
         Args:
-            investigation_db: The investigation database with current state.
             iteration: Current iteration (0 for initial, >0 for refinement).
-            
         Returns:
-            Plan dict with keys: "plan", "reasoning", "passes", "iteration".
+            Dict with 'state' (general context) and 'next_steps' (list of steps).
         """
+
         logger.info("Planning for iteration %d", iteration)
         
         if iteration == 0:
@@ -210,37 +206,6 @@ Based on all this information, what should the Detective Agent investigate next?
         return plan
 
 
-    def _extract_json_from_response(self, response_text: str) -> Dict[str, Any]:
-        """Extract JSON object from Claude's response text.
-
-        Args:
-            response_text: Raw response text from Claude.
-
-        Returns:
-            Parsed JSON dict.
-        """
-        # Try to find JSON object in the response
-        # Look for content between triple backticks first
-        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response_text, re.DOTALL)
-        if json_match:
-            json_str = json_match.group(1)
-        else:
-            # Try to find a JSON object directly
-            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-            if json_match:
-                json_str = json_match.group(0)
-            else:
-                logger.error("Could not find JSON in response: %s", response_text[:200])
-                raise ValueError("No JSON found in response")
-
-        try:
-            return json.loads(json_str)
-        except json.JSONDecodeError as e:
-            logger.error("Failed to parse JSON: %s", str(e))
-            logger.error("JSON string: %s", json_str[:500])
-            raise
 
 
 
-
-    

@@ -1,49 +1,19 @@
-import base64
-import json
-from anthropic import Anthropic
-from app.config import settings
+
 import app.tools.image_to_text.preprocessing as preprocessing
-import re
+from app.tools.image_to_text.metadata import extract_image_metadata_for_agent
+from app.utils.claude_to_json import extract_json_from_response
 
-client = Anthropic(api_key=settings.anthropic_api_key)
+from app.config import settings, create_anthropic_client
+from app.prompts.i2t import TEXT_PASS_PROMPT, ENV_PASS_PROMPT
 
-def safe_json_load(raw_text):
-    try:
-        return json.loads(raw_text)
-    except:
-        pass
+client = create_anthropic_client()
 
-    # try extracting JSON from markdown
-    match = re.search(r'\{.*\}', raw_text, re.DOTALL)
-
-    if match:
-        try:
-            return json.loads(match.group())
-        except:
-            pass
-
-    return {
-        "parse_error": True,
-        "raw_response": raw_text
-    }
-
-
-
-# print(settings.anthropic_api_key)
-# ---------- PROMPTS ----------
-
-with open("app/tools/image_to_text/text_pass_prompt.txt", "r") as f:
-    TEXT_PASS_PROMPT = f.read()
-with open("app/tools/image_to_text/env_pass_prompt.txt", "r") as f:
-    ENV_PASS_PROMPT = f.read()
-
-# ---------- HELPER ----------
 
 def _run_claude_vision(image_data, media_type, prompt):
     response = client.messages.create(
         model="claude-opus-4-6",
         max_tokens=1200,
-        temperature=0,  # reduces hallucination
+        temperature=0,
         messages=[
             {
                 "role": "user",
@@ -64,7 +34,7 @@ def _run_claude_vision(image_data, media_type, prompt):
 
     raw = response.content[0].text
 
-    return safe_json_load(raw)
+    return extract_json_from_response(raw)
 
 
 # ---------- MAIN FUNCTION ----------
@@ -99,36 +69,23 @@ def image_to_geoguessr_features(image_base64, media_type="image/jpeg"):
         }
     }
 
-    # Simple safety checks
-    if "parse_error" in textual_features:
-        result["meta"]["extraction_warnings"].append("Text pass JSON parse error")
-
-    if "parse_error" in environment_features:
-        result["meta"]["extraction_warnings"].append("Environment pass JSON parse error")
 
     return result
 
 
-def load_image_as_base64(path):
-    with open(path, "rb") as f:
-        return base64.b64encode(f.read()).decode("utf-8")
 
 
-def final_run(path) -> tuple[dict, dict]:
+def extract_json_description_and_metadata(path) -> tuple[dict, dict]:
     """
     Runs the full image to text pipeline and returns features along with the preprocessed image.
     """
-    final_path, img = preprocessing.preprocess_image(path)
-
-
-    image_base64 = load_image_as_base64(final_path)
+    image_base64, metadata, img = preprocessing.preprocess_image(path)
 
     features = image_to_geoguessr_features(
         image_base64=image_base64,
         media_type="image/jpeg"
     )
 
-    return features, img
+    return features, None, metadata
 
 
-# print(final_run("app/tools/image_to_text/testing.png"))

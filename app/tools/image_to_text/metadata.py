@@ -133,7 +133,7 @@ def extract_image_metadata_for_agent(image_path: str) -> Dict[str, Any]:
 #testing
 if __name__ == "__main__":
 
-    path = "./app/tools/image_to_text/col.HEIC"
+    path = "./app/tools/image_to_text/norway2.HEIC"
     data = extract_image_metadata_for_agent(path)
 
     print(json.dumps(data, indent=2))
