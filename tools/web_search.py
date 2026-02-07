@@ -1,6 +1,6 @@
 from typing import Any
-from duckduckgo_search import DDGS
-from base_tool import BaseTool, ToolResult
+from ddgs import DDGS
+from .base_tool import BaseTool, ToolResult
 
 class WebSearchTool(BaseTool):
     """
