@@ -61,11 +61,14 @@ uv run ruff format .
 
 ### Entry Point (`app/main.py`)
 
-Current workflow:
+Current workflow (via `run_test_loop()`):
 1. Extract features from image using vision API (text + environment analysis)
 2. Initialize `InvestigationDB` with extracted features and metadata
-3. Run `PlannerAgent` to generate investigation plan
-4. Plan contains `state` (context) and `next_steps` (list of actions)
+3. Run `PlannerAgent.plan()` to generate investigation plan
+4. Initialize `Detective` agent with tools (MainDBTool, WebSearchTool, WebScraperTool, OSMLookupTool, PlonkitSearchTool)
+5. Execute `Detective.investigate_with_plan(plan)` - runs agentic loop until completion
+6. Run `Summarizer.summarize(detective_response)` - extracts key findings with similarity check
+7. Save summary to database if not redundant (similarity_score < 0.8)
 
 ### Configuration (`app/config.py`)
 
@@ -84,21 +87,45 @@ Uses **Pydantic Settings** for environment-based config:
 - `wrongs` - User corrections for incorrect guesses
 - `context` - User-provided contextual hints
 - `history_of_validated_searches` - Validated search results
+- `summaries` - List of investigation summaries with key points (added by Summarizer)
 
 Provides dict-like interface: `db["key"]`, `db.keys()`, `db.to_dict()`, etc.
 
 ### Agents (`app/agents/`)
 
+**Base Agent Class** (`detective.py`):
+- Foundation class for all agents with tool-calling capabilities
+- Initialized with tools (BaseTool instances), model, and optional system_prompt
+- Manages conversation history and tool registration via `register_tools()`
+- Provides `tool_schemas` (Claude API format) and `tool_map` (name -> tool instance)
+
 **PlannerAgent** (`planner.py`):
 - Generates investigation plans based on current system state
 - Two modes: initial planning (iteration 0) and refinement (iteration N)
 - Uses prompts from `app/prompts/planner.py`
-- Returns dict with `state` and `next_steps`
+- Returns dict with `state` (context) and `next_steps` (ordered actions)
 
-**Base Agent Pattern** (`detective.py` is the template):
-- Agents receive `Anthropic` client, `InvestigationDB`, and model name
-- Use specialized prompts for their domain
-- Parse Claude responses into structured JSON using `extract_json_from_response()`
+**Detective** (`detective.py`):
+- Extends Agent class for executing structured investigation plans
+- Core method: `investigate_with_plan(plan, max_iterations=25)`
+- **Agentic Loop**: Iteratively calls Claude API with tools until plan completion
+  - Extracts tool_use blocks from response
+  - Executes tools via tool_map
+  - Appends tool results to conversation
+  - Continues until no tool calls or max_iterations reached
+- Returns execution log with per-iteration tool calls, reasoning, and results
+- Default tools: WebSearchTool, WebScraperTool, OSMLookupTool, PlonkitSearchTool, MainDBTool
+
+**Summarizer** (`summarizer.py`):
+- Extracts key findings from Detective execution logs
+- Core method: `summarize(detective_response, check_similarity=True)`
+- Produces structured output with: summary text, key_points (categorized findings), next_actions
+- **Similarity Checking**: Compares new key points with existing summaries in database
+  - Uses Claude to assess similarity (0.0-1.0 score)
+  - Marks findings as redundant if similarity >= 0.8
+  - Only saves non-redundant summaries to database
+- Uses prompts from `app/prompts/summarizer.py`
+- Key points include: category (location/evidence/hypothesis/contradiction), finding, confidence, source
 
 ### Image Processing (`app/tools/image_to_text/`)
 
@@ -140,11 +167,35 @@ Provides dict-like interface: `db["key"]`, `db.keys()`, `db.to_dict()`, etc.
 - Supports filtered search (limit to specific countries) and result limiting
 - Usage: `tool.execute(keywords=["yellow plate", "cyrillic"], max_results=10)`
 
+**WebSearchTool** (`web_search.py`):
+- DuckDuckGo-powered web search via `ddgs` library
+- Usage: `tool.execute(query="storefront matching [text]", max_results=5)`
+- Returns formatted results with title, URL, and snippet
+
+**WebScraperTool** (`web_scraper.py`):
+- Extracts main text content from URLs using `trafilatura`
+- Usage: `tool.execute(url="https://example.com")`
+- Truncates output to 50,000 chars to prevent context overflow
+- Handles bot protection and missing content gracefully
+
+**OSMLookupTool** (`osm_search.py`):
+- Queries OpenStreetMap Nominatim API for location coordinates
+- Usage: `tool.execute(query="Eiffel Tower")`
+- Returns display_name, latitude, longitude, and location type
+- Includes custom User-Agent for Nominatim compliance
+
+**MainDBTool** (`maindb_tool.py`):
+- Read-only interface for agents to access InvestigationDB
+- Actions: `get_state` (full snapshot), `get_field` (single field), `to_dict` (full dict)
+- Usage: `tool.execute(action="get_field", field="initial_text")`
+- Provides access to: initial_text, metadata, wrongs, context, history_of_validated_searches
+
 ### Prompts (`app/prompts/`)
 
 Agents use prompts from this directory:
 - `planner.py` - System prompts and user message templates for PlannerAgent
 - `i2t.py` - Vision API prompts for text and environment extraction
+- `summarizer.py` - Prompts for Summarizer agent (summarization and similarity checking)
 
 ## Code Quality
 

@@ -174,7 +174,7 @@ class Detective(Agent):
         """
         super().__init__(tools=tools, model=model, system_prompt=system_prompt)
 
-    def investigate_with_plan(self, plan: Dict[str, Any], max_iterations: int = 20) -> Dict[str, Any]:
+    def investigate_with_plan(self, plan: Dict[str, Any], max_iterations: int = 8) -> Dict[str, Any]:
         """
         Execute an investigation based on a structured plan from PlannerAgent.
 
@@ -302,8 +302,8 @@ Begin executing this investigation plan. Start by accessing the maindb tool to r
 
                         # Check if we've seen this exact search before
                         if search_signature in tool_call_history:
-                            print(f"⚠️  WARNING: Duplicate search detected! This exact {tool_name} query was already executed.")
-                            print(f"   The agent may be stuck in a loop. Consider stopping if this continues.")
+                            print(f"WARNING: Duplicate search detected! This exact {tool_name} query was already executed.")
+                            print(f"The agent may be stuck in a loop. Consider stopping if this continues.")
                         else:
                             tool_call_history.append(search_signature)
 

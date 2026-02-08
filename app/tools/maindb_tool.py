@@ -28,10 +28,13 @@ class MainDBTool(BaseTool):
         """Returns what the tool does."""
         return (
             "Interact with the investigation database. Supports operations: "
-            "'get_state' (retrieve investigation state, including initial textual description from image to text, metadata, wrongs, context, and validated searches), "
-            "'get_field' (retrieve specific field), "
-            "'to_dict' (get full database as dictionary), "
-            "'add_validated_search' (store search results to prevent repeated searches - requires 'query' and 'results' fields)."
+            "'get_state' (retrieve investigation state, including initial textual "
+            "description from image to text, metadata, wrongs, context, and validated "
+            "searches), 'get_field' (retrieve specific field), 'to_dict' (get full "
+            "database as dictionary), 'add_validated_search' (store search results to "
+            "prevent repeated searches - requires 'query' and 'results' fields), "
+            "'check_progress' (check if investigation is making progress based on "
+            "summary redundancy - returns whether to continue investigating)."
         )
 
     def get_parameters(self) -> dict[str, Any]:
@@ -46,12 +49,17 @@ class MainDBTool(BaseTool):
                         "get_field",
                         "to_dict",
                         "add_validated_search",
+                        "check_progress",
                     ],
                     "description": "The database operation to perform",
                 },
                 "field": {
                     "type": "string",
-                    "description": "Field name for get_field action (e.g., 'initial_text', 'wrongs', 'context', 'metadata', 'initial_photo', 'history_of_validated_searches')",
+                    "description": (
+                        "Field name for get_field action (e.g., 'initial_text', 'wrongs', "
+                        "'context', 'metadata', 'initial_photo', "
+                        "'history_of_validated_searches')"
+                    ),
                 },
                 "query": {
                     "type": "string",
@@ -69,7 +77,8 @@ class MainDBTool(BaseTool):
         """Executes the database operation with given parameters.
 
         Args:
-            action: The operation to perform (get_state, get_field, to_dict, add_validated_search)
+            action: The operation to perform (get_state, get_field, to_dict,
+                   add_validated_search, check_progress)
             field: Field name (for get_field action)
             query: Search query (for add_validated_search action)
             results: Search results (for add_validated_search action)
@@ -148,14 +157,66 @@ class MainDBTool(BaseTool):
 
                 return ToolResult(
                     success=True,
-                    data={"message": f"Search result stored successfully", "query": query},
+                    data={"message": "Search result stored successfully", "query": query},
                     metadata={"action": "add_validated_search", "query": query},
                 )
+
+            elif action == "check_progress":
+                # Check if investigation should continue based on summary redundancy
+                summaries = self.db.get_summaries()
+
+                if not summaries:
+                    return ToolResult(
+                        success=True,
+                        data={
+                            "should_continue": True,
+                            "reason": "No summaries yet - investigation just started",
+                            "total_summaries": 0,
+                        },
+                        metadata={"action": "check_progress"},
+                    )
+
+                # Get most recent summary
+                latest_summary = summaries[-1]
+                is_redundant = latest_summary.get("is_redundant", False)
+                similarity_score = latest_summary.get("similarity_score", 0.0)
+
+                if is_redundant:
+                    return ToolResult(
+                        success=True,
+                        data={
+                            "should_continue": False,
+                            "reason": (
+                                f"Investigation has converged - latest findings are "
+                                f"redundant (similarity: {similarity_score:.2f})"
+                            ),
+                            "total_summaries": len(summaries),
+                            "similarity_score": similarity_score,
+                        },
+                        metadata={"action": "check_progress"},
+                    )
+                else:
+                    return ToolResult(
+                        success=True,
+                        data={
+                            "should_continue": True,
+                            "reason": (
+                                f"Investigation making progress - findings show "
+                                f"new information (similarity: {similarity_score:.2f})"
+                            ),
+                            "total_summaries": len(summaries),
+                            "similarity_score": similarity_score,
+                        },
+                        metadata={"action": "check_progress"},
+                    )
 
             else:
                 return ToolResult(
                     success=False,
-                    error=f"Unknown action '{action}'. Valid actions: get_state, get_field, to_dict, add_validated_search",
+                    error=(
+                        f"Unknown action '{action}'. Valid actions: get_state, "
+                        "get_field, to_dict, add_validated_search, check_progress"
+                    ),
                 )
 
         except Exception as e:

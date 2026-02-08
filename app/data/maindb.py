@@ -1,9 +1,9 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class InvestigationDB:
     """Dict-like database for investigation state and history.
-    
+
     Stores investigation artifacts including initial photo, text extraction,
     user corrections, context hints, and validated search results.
     """
@@ -12,10 +12,10 @@ class InvestigationDB:
         self,
         initial_photo: str,
         initial_text: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """Initialize investigation database.
-        
+
         Args:
             initial_photo: Path or ID of the initial investigation photo.
             initial_text: Extracted text from image_to_text function.
@@ -24,9 +24,10 @@ class InvestigationDB:
         self.initial_photo = initial_photo
         self.initial_text = initial_text
         self.metadata = metadata or {}
-        self.wrongs: List[Dict[str, Any]] = []
-        self.context: List[str] = []
-        self.history_of_validated_searches: List[Dict[str, Any]] = []
+        self.wrongs: list[dict[str, Any]] = []
+        self.context: list[str] = []
+        self.history_of_validated_searches: list[dict[str, Any]] = []
+        self.summaries: list[dict[str, Any]] = []
 
     # ========== Dict-like Interface ==========
 
@@ -51,10 +52,11 @@ class InvestigationDB:
             f"text_len={len(self.initial_text)}, "
             f"wrongs={len(self.wrongs)}, "
             f"context={len(self.context)}, "
-            f"validated_searches={len(self.history_of_validated_searches)})"
+            f"validated_searches={len(self.history_of_validated_searches)}, "
+            f"summaries={len(self.summaries)})"
         )
 
-    def keys(self) -> List[str]:
+    def keys(self) -> list[str]:
         """Return list of field names."""
         return [
             "initial_photo",
@@ -63,13 +65,14 @@ class InvestigationDB:
             "wrongs",
             "context",
             "history_of_validated_searches",
+            "summaries",
         ]
 
-    def values(self) -> List[Any]:
+    def values(self) -> list[Any]:
         """Return list of field values."""
         return [getattr(self, key) for key in self.keys()]
 
-    def items(self) -> List[tuple[str, Any]]:
+    def items(self) -> list[tuple[str, Any]]:
         """Return list of (key, value) tuples."""
         return [(key, getattr(self, key)) for key in self.keys()]
 
@@ -77,15 +80,15 @@ class InvestigationDB:
         """Safely get field with default fallback."""
         return getattr(self, key, default)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to plain dict."""
         return {key: getattr(self, key) for key in self.keys()}
 
     # ========== Mutators ==========
 
-    def add_wrong(self, wrong_entry: Dict[str, Any]) -> None:
+    def add_wrong(self, wrong_entry: dict[str, Any]) -> None:
         """Add a user-corrected wrong guess.
-        
+
         Args:
             wrong_entry: Dict with wrong guess data (e.g., {"guess": "...", "correction": "..."}).
         """
@@ -93,31 +96,40 @@ class InvestigationDB:
 
     def add_context(self, hint: str) -> None:
         """Add a user-provided textual context hint.
-        
+
         Args:
             hint: String hint or contextual information.
         """
         self.context.append(hint)
 
-    def add_validated_search(self, search_result: Dict[str, Any]) -> None:
+    def add_validated_search(self, search_result: dict[str, Any]) -> None:
         """Add a validated search result from the validator agent.
-        
+
         Args:
             search_result: Dict with validated search data from detective/validator.
         """
         self.history_of_validated_searches.append(search_result)
 
+    def add_summary(self, summary: dict[str, Any]) -> None:
+        """Add an investigation summary with key points.
+
+        Args:
+            summary: Dict with summary data from summarizer agent (includes
+                    summary, key_points, next_actions, etc.).
+        """
+        self.summaries.append(summary)
+
     # ========== Accessors ==========
 
-    def get_wrongs(self) -> List[Dict[str, Any]]:
+    def get_wrongs(self) -> list[dict[str, Any]]:
         """Get all recorded wrongs."""
         return self.wrongs
 
-    def get_context(self) -> List[str]:
+    def get_context(self) -> list[str]:
         """Get all user context hints."""
         return self.context
 
-    def get_validated_searches(self) -> List[Dict[str, Any]]:
+    def get_validated_searches(self) -> list[dict[str, Any]]:
         """Get all validated search results."""
         return self.history_of_validated_searches
 
@@ -129,9 +141,19 @@ class InvestigationDB:
         """Get initial photo path/ID."""
         return self.initial_photo
 
-    def get_metadata(self) -> Dict[str, Any]:
+    def get_metadata(self) -> dict[str, Any]:
         """Get investigation metadata."""
         return self.metadata
-    
+
+    def get_summaries(self) -> list[dict[str, Any]]:
+        """Get all investigation summaries."""
+        return self.summaries
+
     def get_state_snapshot(self):
-        return self.initial_text, self.metadata, self.wrongs, self.context, self.history_of_validated_searches
+        return (
+            self.initial_text,
+            self.metadata,
+            self.wrongs,
+            self.context,
+            self.history_of_validated_searches,
+        )
