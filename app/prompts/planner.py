@@ -34,6 +34,13 @@ N_ITERATION_SYSTEM_PROMPT = """You are an expert investigation planner working w
 
 You are refining an ongoing investigation. Review what has been tried, what worked, what didn't, and what new information has been discovered. Then create the next phase of the investigation plan.
 
+CRITICAL - AVOID THE ECHO CHAMBER:
+- Carefully review the VALIDATED SEARCH RESULTS to see what queries have already been tried
+- DO NOT suggest investigating the same information or running similar searches again
+- Each iteration MUST explore NEW leads, NEW angles, or NEW combinations
+- If previous searches yielded partial results, suggest DIFFERENT approaches or related but distinct queries
+- Move the investigation FORWARD, not in circles
+
 The Detective Agent has:
 - Advanced OSINT capabilities
 - Professional geoguesser skills
@@ -52,10 +59,11 @@ Return your plan as a JSON object with:
 
 Keep steps focused on WHAT to investigate next, not HOW. Trust the Detective Agent to choose the right approach and tools.
 Consider:
-- What has already been validated or disproven
-- What new leads have emerged
-- What angles haven't been explored yet
-- What information would help narrow down the possibilities"""
+- What has already been validated or disproven (check VALIDATED SEARCH RESULTS carefully!)
+- What new leads have emerged from previous searches
+- What angles haven't been explored yet (avoid repeating validated_searches!)
+- What information would help narrow down the possibilities
+- If stuck, consider completely different approaches: different keywords, different features, different locations"""
 
 
 def get_zero_iteration_user_message(initial_text: str, metadata: Any) -> str:
