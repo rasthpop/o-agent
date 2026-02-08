@@ -20,7 +20,7 @@ def main():
 
 
 def run_test_loop():
-    path = "app/images/nice.jpg"
+    path = "app/images/image.png"
     print(f"Running test loop with image: {path}")
     features, _, metadata = extract_json_description_and_metadata(path)
     print("Extracted features:")
@@ -43,14 +43,13 @@ def run_test_loop():
     )
     summarizer = Summarizer(client, db, model=settings.default_model)
 
-    max_outer_loops = 10  # Maximum number of planner-detective-summarizer cycles
+    max_outer_loops = 5  # Maximum number of planner-detective-summarizer cycles
     investigation_complete = False
     outer_iteration = 0
     final_summary = None
 
     print("\n" + "=" * 80)
     print("STARTING INVESTIGATION PIPELINE")
-    print("Architecture: PLANNER  DETECTIVE  SUMMARIZER  PLANNER")
     print("=" * 80)
 
     while not investigation_complete and outer_iteration < max_outer_loops:
@@ -60,13 +59,11 @@ def run_test_loop():
         print(f"PIPELINE CYCLE {outer_iteration}/{max_outer_loops}")
         print(f"{'=' * 80}")
 
-        # ===== PHASE 1: PLANNER =====
-        # Planner analyzes current state and creates investigation strategy
         print("\n[PHASE 1: PLANNER]")
         print("Analyzing investigation state and creating plan...")
         planner_response = planner.plan(iteration=outer_iteration - 1)
 
-        print(f"✓ Plan created with {len(planner_response.get('next_steps', []))} steps")
+        print(f"  Plan created with {len(planner_response.get('next_steps', []))} steps")
         print(f"  State summary: {planner_response.get('state', '')[:200]}...")
 
         # Check if planner indicates investigation is complete
@@ -75,15 +72,12 @@ def run_test_loop():
             investigation_complete = True
             break
 
-        # ===== PHASE 2: DETECTIVE =====
-        # Detective executes plan within iteration limit (max 10 iterations)
-        # Detective is self-contained and must complete within its iteration budget
+
         print("\n[PHASE 2: DETECTIVE]")
         print("Executing investigation plan (max 10 iterations per cycle)...")
         detective_response = detective.investigate_with_plan(planner_response, max_iterations=10)
 
-        # Detective execution summary
-        print("\n✓ Detective execution complete:")
+        print("\n  Detective execution complete:")
         print(f"  Status: {detective_response['status']}")
         print(f"  Iterations used: {detective_response['iterations']}/10")
         print(f"  Plan steps: {detective_response['total_steps']}")
@@ -93,19 +87,15 @@ def run_test_loop():
         elif detective_response["status"] == "error":
             print(f"Error: {detective_response.get('error', 'Unknown error')}")
 
-        # Log tool usage per iteration
         print("\n  Tool usage summary:")
         for log in detective_response["execution_log"]:
             tool_summary = ", ".join([tc["tool_name"] for tc in log["tool_calls"]])
             print(f"Iteration {log['iteration']}: [{tool_summary}]")
 
-        # Detective's final reasoning
         final_response = detective_response.get("final_response", "")
         if final_response:
             print(f"\n  Detective's summary: {final_response[:300]}...")
 
-        # ===== PHASE 3: SUMMARIZER =====
-        # Summarizer extracts key findings and checks for redundancy
         print("\n[PHASE 3: SUMMARIZER]")
         print("Extracting key findings and checking for redundancy...")
 
@@ -117,7 +107,6 @@ def run_test_loop():
         print(f"  Similarity score: {summary.get('similarity_score', 0.0):.2f}")
         print(f"  Is redundant: {summary.get('is_redundant', False)}")
 
-        # Display key points
         if summary.get("key_points"):
             print("\n  Key findings this iteration:")
             for i, point in enumerate(summary.get("key_points", [])[:3], 1):
@@ -126,25 +115,20 @@ def run_test_loop():
                 confidence = point.get("confidence", "unknown")
                 print(f"{i}. [{category}] {finding}... (confidence: {confidence})")
 
-        # STOP CONDITION: Check if findings are redundant
         if summary.get("is_redundant", False):
             print("\n" + "!" * 80)
             print("STOP CONDITION MET: FINDINGS ARE REDUNDANT")
             print("Investigation has converged - no new meaningful progress detected.")
-            print(f"Similarity score ({summary.get('similarity_score', 0.0):.2f}) >= 0.8 threshold")
             print("!" * 80)
             investigation_complete = True
             final_summary = summary
-            # Save final summary before breaking
             db.add_summary(summary)
             break
 
-        # Save non-redundant summary and continue
         db.add_summary(summary)
         final_summary = summary
-        print(f"✓ Summary saved to database ({len(db.get_summaries())} total summaries)")
+        print(f" Summary saved to database ({len(db.get_summaries())} total summaries)")
 
-        # ===== LOOP CONTINUATION =====
         print(
             f"\n[PIPELINE] Cycle {outer_iteration} complete. "
             "Findings show progress - continuing to next iteration."
@@ -162,7 +146,6 @@ def run_test_loop():
         stop_reason = "Maximum cycles reached"
     print(f"Stop reason: {stop_reason}")
 
-    # Display final comprehensive summary
     if final_summary:
         print("\n" + "=" * 80)
         print("FINAL INVESTIGATION SUMMARY")
@@ -175,10 +158,7 @@ def run_test_loop():
         for i, point in enumerate(final_summary.get("key_points", []), 1):
             print(f"\n{i}. [{point.get('category', 'unknown').upper()}]")
             print(f"   Finding: {point.get('finding', '')}")
-            print(
-                f"   Confidence: {point.get('confidence', 'unknown')} | "
-                f"Source: {point.get('source', 'unknown')}"
-            )
+
 
         if final_summary.get("next_actions"):
             print("\n--- RECOMMENDED NEXT ACTIONS ---")
@@ -190,10 +170,8 @@ def run_test_loop():
         print("\n--- INVESTIGATION PROGRESSION ---")
         print(f"Total summaries: {len(all_summaries)}")
         for idx, summ in enumerate(all_summaries):
-            similarity = summ.get("similarity_score", 0.0)
             print(
-                f"  Iteration {idx}: {summ.get('summary', 'N/A')[:100]}... "
-                f"(similarity: {similarity:.2f})"
+                f"  Iteration {idx}: {summ.get('summary', 'N/A')[:200]}... "
             )
 
     print("\n--- DATABASE STATE ---")

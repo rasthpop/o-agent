@@ -20,7 +20,6 @@ Return a JSON object with:
         {
             "category": "location|evidence|hypothesis|contradiction",
             "finding": "Specific finding or conclusion",
-            "source": "Tool or method that produced this finding"
         }
     ],
     "next_actions": ["Suggested follow-up actions if investigation incomplete"]

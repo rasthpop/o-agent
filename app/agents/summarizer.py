@@ -73,7 +73,6 @@ class Summarizer:
 
         logger.info("Summary generated with %d key points", len(summary_data.get("key_points", [])))
 
-        # Add similarity checking if requested
         if check_similarity:
             existing_summaries = self._get_existing_key_points()
             if existing_summaries:
@@ -104,13 +103,10 @@ class Summarizer:
             List of key points from previous summaries, or empty list if none exist.
         """
         try:
-            # Try to get previous summaries from database
-            # Assuming summaries are stored in a 'summaries' or 'key_points' field
             summaries = self.db.get("summaries", [])
             if not summaries:
                 return []
 
-            # If summaries exist, extract all key_points
             all_key_points = []
             for summary in summaries:
                 if isinstance(summary, dict) and "key_points" in summary:
@@ -130,12 +126,6 @@ class Summarizer:
         Args:
             existing_key_points: Previously saved key points.
             new_key_points: Newly generated key points.
-
-        Returns:
-            Dict with:
-                - similarity_score (float): Score from 0.0 to 1.0
-                - is_redundant (bool): True if similarity_score >= 0.8
-                - reasoning (str): Explanation of similarity assessment
         """
         logger.info(
             "Checking similarity: %d existing vs %d new key points",
@@ -155,11 +145,9 @@ class Summarizer:
         response_text = response.content[0].text
         similarity_data = extract_json_from_response(response_text)
 
-        # Ensure score is within bounds
         similarity_score = similarity_data.get("similarity_score", 0.0)
         similarity_score = max(0.0, min(1.0, similarity_score))
 
-        # Determine redundancy with 0.8 threshold
         is_redundant = similarity_score >= 0.42
 
         return {
