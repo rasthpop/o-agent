@@ -1,10 +1,10 @@
 from typing import Any
 
 import anthropic
-from config import settings
+from app.config import settings
 from pydantic import BaseModel, Field
-from tools.base_tool import BaseTool
-from tools.registry import register_tools
+from app.tools.base_tool import BaseTool
+from app.tools.registry import register_tools
 
 import json
 from typing import Dict, Any, List

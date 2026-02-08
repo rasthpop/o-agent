@@ -1,6 +1,6 @@
 import json
 import os
-from agents.detective import Detective
+from app.agents.detective import Detective
 
 # --- 1. THE MOCK PLANNER INSTRUCTION ---
 # Normally, the Planner would send this text. 
@@ -115,7 +115,7 @@ def run_interactive_test():
     # Initialize conversation history
     messages = [{"role": "user", "content": initial_message}]
 
-    MAX_TURNS = 10
+    MAX_TURNS = 2
     turn_count = 0
 
     print(f"\n💬 USER PROMPT:\n{initial_message[:100]}...\n")
