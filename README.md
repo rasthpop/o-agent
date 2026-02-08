@@ -38,7 +38,7 @@ Multi-agent OSINT system that autonomously plans investigations, collects open-s
 
 4. **Run**:
    ```bash
-   uv run python main.py
+   uv run python -m app.main
    ```
 
 ### For Developers
