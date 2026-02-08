@@ -5,111 +5,120 @@ from app.agents.detective import Detective
 # --- 1. THE MOCK PLANNER INSTRUCTION ---
 # Normally, the Planner would send this text. 
 # We simulate it here as the "User Goal" the Detective is trying to solve.
+
 PLANNER_INSTRUCTION = (
     "Investigation Goal: Geolocate the target based on the provided visual features. "
-    "Prioritize finding the physical store location derived from the signage."
 )
 
 # --- 2. THE MOCK IMAGE DATA ---
-IMAGE_DATA = {
-  "textual_features": {
-    "signage_text": [
-      { "value": "NATURKOMPANIET", "confidence": 0.98 },
-      { "value": "NATUR KOMPANIET", "confidence": 0.85 },
-      { "value": "WAYNE", "confidence": 0.50 },
-      { "value": "19", "confidence": 0.70 },
-      { "value": "25", "confidence": 0.70 },
-      { "value": "Søndag", "confidence": 0.55 }
-    ],
-    "languages": [
-      { "value": "Swedish", "confidence": 0.80 },
-      { "value": "Norwegian", "confidence": 0.75 }
-    ],
-    "alphabets": [
-      { "type": "Latin", "confidence": 0.99 }
-    ],
-    "phone_numbers": [],
-    "domains": [],
-    "license_plates": [],
-    "brand_names": [
-      { "value": "Naturkompaniet", "confidence": 0.98 }
-    ],
-    "other_unidentified": [
-      { "value": "Norwegian flag visible on building facade (red with blue and white cross)" },
-      { "value": "A-frame sandwich board signs on sidewalk with partially legible text" },
-      { "value": "No parking sign (circular red/blue) visible" }
-    ]
-  },
+# IMAGE_DATA = {
+#   "textual_features": {
+#     "signage_text": [
+#       { "value": "NATURKOMPANIET", "confidence": 0.98 },
+#       { "value": "NATUR KOMPANIET", "confidence": 0.85 },
+#       { "value": "WAYNE", "confidence": 0.50 },
+#       { "value": "19", "confidence": 0.70 },
+#       { "value": "25", "confidence": 0.70 },
+#       { "value": "Søndag", "confidence": 0.55 }
+#     ],
+#     "languages": [
+#       { "value": "Swedish", "confidence": 0.80 },
+#       { "value": "Norwegian", "confidence": 0.75 }
+#     ],
+#     "alphabets": [
+#       { "type": "Latin", "confidence": 0.99 }
+#     ],
+#     "phone_numbers": [],
+#     "domains": [],
+#     "license_plates": [],
+#     "brand_names": [
+#       { "value": "Naturkompaniet", "confidence": 0.98 }
+#     ],
+#     "other_unidentified": [
+#       { "value": "Norwegian flag visible on building facade (red with blue and white cross)" },
+#       { "value": "A-frame sandwich board signs on sidewalk with partially legible text" },
+#       { "value": "No parking sign (circular red/blue) visible" }
+#     ]
+#   },
 
-  "environment_features": {
-    "environment": {
-      "biome": "boreal/subarctic",
-      "vegetation": "null",
-      "terrain": "flat urban street",
-      "urban_density": "medium-density town center",
-      "confidence": 0.85
-    },
+#   "environment_features": {
+#     "environment": {
+#       "biome": "boreal/subarctic",
+#       "vegetation": "null",
+#       "terrain": "flat urban street",
+#       "urban_density": "medium-density town center",
+#       "confidence": 0.85
+#     },
 
-    "road_features": {
-      "lane_markings": "null",
-      "pavement_type": "asphalt with snow/ice cover",
-      "driving_side_hint": "null",
-      "shoulder_style": "null",
-      "confidence": 0.40
-    },
+#     "road_features": {
+#       "lane_markings": "null",
+#       "pavement_type": "asphalt with snow/ice cover",
+#       "driving_side_hint": "null",
+#       "shoulder_style": "null",
+#       "confidence": 0.40
+#     },
 
-    "infrastructure": {
-      "bollards": "null",
-      "utility_poles": "null",
-      "guardrails": "null",
-      "street_lights": "string lights/fairy lights strung across street",
-      "sidewalks": "paved sidewalk along storefronts, snow-covered",
-      "confidence": 0.75
-    },
+#     "infrastructure": {
+#       "bollards": "null",
+#       "utility_poles": "null",
+#       "guardrails": "null",
+#       "street_lights": "string lights/fairy lights strung across street",
+#       "sidewalks": "paved sidewalk along storefronts, snow-covered",
+#       "confidence": 0.75
+#     },
 
-    "architecture": {
-      "building_materials": "painted wooden clapboard/timber frame construction",
-      "roof_styles": "steep gabled roofs with decorative wooden gable trim, pointed dormers, Nordic wooden vernacular style",
-      "density": "continuous row of attached/semi-attached commercial buildings",
-      "confidence": 0.95
-    },
+#     "architecture": {
+#       "building_materials": "painted wooden clapboard/timber frame construction",
+#       "roof_styles": "steep gabled roofs with decorative wooden gable trim, pointed dormers, Nordic wooden vernacular style",
+#       "density": "continuous row of attached/semi-attached commercial buildings",
+#       "confidence": 0.95
+#     },
 
-    "vehicles": {
-      "brands": [],
-      "taxi_patterns": "null",
-      "confidence": 0.10
-    },
+#     "vehicles": {
+#       "brands": [],
+#       "taxi_patterns": "null",
+#       "confidence": 0.10
+#     },
 
-    "astronomy": {
-      "shadow_direction": "null",
-      "sun_height": "very low sun angle, twilight/dusk conditions suggesting high latitude winter",
-      "confidence": 0.80
-    },
+#     "astronomy": {
+#       "shadow_direction": "null",
+#       "sun_height": "very low sun angle, twilight/dusk conditions suggesting high latitude winter",
+#       "confidence": 0.80
+#     },
 
-    "other_unidentified": [
-      { "value": "Norwegian cross flag visible on building facade" },
-      { "value": "heavy snow accumulation on rooftops and awnings" },
-      { "value": "Christmas/holiday decorative lights on storefronts and strung overhead" },
-      { "value": "traditional Scandinavian wooden architecture with green and cream paint colors" },
-      { "value": "pedestrian shopping street or low-traffic commercial zone" },
-      { "value": "A-frame sandwich board signs on sidewalk" },
-      { "value": "no-stopping traffic sign (circular red border with blue center)" }
-    ]
-  }
-}
+#     "other_unidentified": [
+#       { "value": "Norwegian cross flag visible on building facade" },
+#       { "value": "heavy snow accumulation on rooftops and awnings" },
+#       { "value": "Christmas/holiday decorative lights on storefronts and strung overhead" },
+#       { "value": "traditional Scandinavian wooden architecture with green and cream paint colors" },
+#       { "value": "pedestrian shopping street or low-traffic commercial zone" },
+#       { "value": "A-frame sandwich board signs on sidewalk" },
+#       { "value": "no-stopping traffic sign (circular red border with blue center)" }
+#     ]
+#   }
+# }
 
-def run_interactive_test():
+def run_interactive_test(plan):
     print("🕵️‍♂️ INITIALIZING DETECTIVE AGENT...")
     detective = Detective()
-    
-    # 1. PREPARE THE PROMPT
-    # We access the internal helper to generate the same briefing the agent sees
-    briefing = detective._format_feature_brief(IMAGE_DATA)
-    
+
+    # 1. PREPARE THE PROMPT FROM PLAN
+    # Plan contains 'state' (context) and 'next_steps' (list of dict with step_n and description)
+    plan_state = plan.get("state", "No context provided")
+    plan_steps = plan.get("next_steps", [])
+
+    # Format the plan into a briefing
+    # Each step is a dict: {"step_n": 1, "description": "..."}
+    steps_text = "\n".join([
+        f"{step['step_n']}. {step['description']}"
+        for step in plan_steps
+    ])
+
     initial_message = (
-        f"Here is the data extracted from the target image.\n"
-        f"{briefing}\n\n"
-        "Based on these features, start the search to find the location."
+        f"Investigation Plan:\n\n"
+        f"Context:\n{plan_state}\n\n"
+        f"Next Steps:\n{steps_text}\n\n"
+        "Execute these investigation steps to find the location."
     )
 
     # Initialize conversation history
@@ -198,4 +207,14 @@ def run_interactive_test():
             break
 
 if __name__ == "__main__":
-    run_interactive_test()
+    # Example plan structure:
+    # plan = {
+    #     "state": "Investigation context and current findings",
+    #     "next_steps": [
+    #         {"step_n": 1, "description": "Search Plonkit database for Nordic architecture features"},
+    #         {"step_n": 2, "description": "Look for information about Naturkompaniet store locations"},
+    #         {"step_n": 3, "description": "Verify Norwegian flag and Scandinavian signage"}
+    #     ]
+    # }
+    # run_interactive_test(plan)
+    print("Please provide a plan dictionary to run_interactive_test()")
