@@ -20,7 +20,7 @@ def main():
 
 
 def run_test_loop():
-    path = "app/images/image.png"
+    path = "app/images/podatkova.jpg"
     print(f"Running test loop with image: {path}")
     features, _, metadata = extract_json_description_and_metadata(path)
     print("Extracted features:")
@@ -159,6 +159,13 @@ def run_test_loop():
             print(f"\n{i}. [{point.get('category', 'unknown').upper()}]")
             print(f"   Finding: {point.get('finding', '')}")
 
+        print("\n--- LOCATION GUESS ---")
+        point = final_summary.get("final_guess", [])
+            
+        print(f"   Coordinates: {point.get('latitude', '')} {point.get('longitude', '')}")
+        print(f"   Confidence radius: {point.get('confidence_radius_km', '')}")
+        print(f"   Location name: {point.get('location_name', '')}")
+        print(f"   Reasoning: {point.get('reasoning', '')}")
 
         if final_summary.get("next_actions"):
             print("\n--- RECOMMENDED NEXT ACTIONS ---")
