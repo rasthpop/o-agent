@@ -11,7 +11,7 @@ def main():
 def run_test_loop():
 
 
-    PATH = "app/images/norway2.HEIC"
+    PATH = "app/images/col.HEIC"
     print(f"Running test loop with image: {PATH}")
     features, img, metadata = extract_json_description_and_metadata(PATH)
     print("Extracted features:")
