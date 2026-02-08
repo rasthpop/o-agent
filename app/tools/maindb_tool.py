@@ -28,9 +28,11 @@ class MainDBTool(BaseTool):
         """Returns what the tool does."""
         return (
             "Interact with the investigation database. Supports operations: "
-            "'get_state' (retrieve investigation state, including initial textual description from image to text, metadata, wrongs, context, and validated searches), "
-            "'get_field' (retrieve specific field), "
-            "'to_dict' (get full database as dictionary)."
+            "'get_state' (retrieve investigation state, including initial textual "
+            "description from image to text, metadata, wrongs, context, and validated "
+            "searches), 'get_field' (retrieve specific field), 'to_dict' (get full "
+            "database as dictionary). Available fields: initial_photo, initial_text, "
+            "metadata, wrongs, context, history_of_validated_searches, summaries."
         )
 
     def get_parameters(self) -> dict[str, Any]:
@@ -49,7 +51,11 @@ class MainDBTool(BaseTool):
                 },
                 "field": {
                     "type": "string",
-                    "description": "Field name for get_field action (e.g., 'initial_text', 'wrongs', 'context', 'metadata', 'initial_photo', 'history_of_validated_searches')",
+                    "description": (
+                        "Field name for get_field action (e.g., 'initial_text', "
+                        "'wrongs', 'context', 'metadata', 'initial_photo', "
+                        "'history_of_validated_searches', 'summaries')"
+                    ),
                 },
             },
             "required": ["action"],
@@ -116,7 +122,9 @@ class MainDBTool(BaseTool):
             else:
                 return ToolResult(
                     success=False,
-                    error=f"Unknown action '{action}'. Valid actions: get_state, get_field, to_dict",
+                    error=(
+                        f"Unknown action '{action}'. Valid actions: get_state, get_field, to_dict"
+                    ),
                 )
 
         except Exception as e:
