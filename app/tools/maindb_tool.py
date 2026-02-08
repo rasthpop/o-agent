@@ -30,7 +30,8 @@ class MainDBTool(BaseTool):
             "Interact with the investigation database. Supports operations: "
             "'get_state' (retrieve investigation state, including initial textual description from image to text, metadata, wrongs, context, and validated searches), "
             "'get_field' (retrieve specific field), "
-            "'to_dict' (get full database as dictionary)."
+            "'to_dict' (get full database as dictionary), "
+            "'add_validated_search' (store search results to prevent repeated searches - requires 'query' and 'results' fields)."
         )
 
     def get_parameters(self) -> dict[str, Any]:
@@ -44,23 +45,34 @@ class MainDBTool(BaseTool):
                         "get_state",
                         "get_field",
                         "to_dict",
+                        "add_validated_search",
                     ],
-                    "description": "The read-only database operation to perform",
+                    "description": "The database operation to perform",
                 },
                 "field": {
                     "type": "string",
                     "description": "Field name for get_field action (e.g., 'initial_text', 'wrongs', 'context', 'metadata', 'initial_photo', 'history_of_validated_searches')",
+                },
+                "query": {
+                    "type": "string",
+                    "description": "Search query string for add_validated_search action",
+                },
+                "results": {
+                    "type": "string",
+                    "description": "Search results summary for add_validated_search action",
                 },
             },
             "required": ["action"],
         }
 
     def execute(self, **kwargs) -> ToolResult:
-        """Executes the read-only database operation with given parameters.
+        """Executes the database operation with given parameters.
 
         Args:
-            action: The operation to perform (get_state, get_field, to_dict)
+            action: The operation to perform (get_state, get_field, to_dict, add_validated_search)
             field: Field name (for get_field action)
+            query: Search query (for add_validated_search action)
+            results: Search results (for add_validated_search action)
 
         Returns:
             ToolResult with operation results or error details.
@@ -113,10 +125,37 @@ class MainDBTool(BaseTool):
                     metadata={"action": "to_dict"},
                 )
 
+            elif action == "add_validated_search":
+                query = kwargs.get("query")
+                results = kwargs.get("results")
+
+                if not query:
+                    return ToolResult(
+                        success=False,
+                        error="'query' parameter is required for add_validated_search action",
+                    )
+                if not results:
+                    return ToolResult(
+                        success=False,
+                        error="'results' parameter is required for add_validated_search action",
+                    )
+
+                search_entry = {
+                    "query": query,
+                    "results": results,
+                }
+                self.db.add_validated_search(search_entry)
+
+                return ToolResult(
+                    success=True,
+                    data={"message": f"Search result stored successfully", "query": query},
+                    metadata={"action": "add_validated_search", "query": query},
+                )
+
             else:
                 return ToolResult(
                     success=False,
-                    error=f"Unknown action '{action}'. Valid actions: get_state, get_field, to_dict",
+                    error=f"Unknown action '{action}'. Valid actions: get_state, get_field, to_dict, add_validated_search",
                 )
 
         except Exception as e:
