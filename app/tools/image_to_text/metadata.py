@@ -2,7 +2,7 @@ from PIL import Image, ExifTags
 from pillow_heif import register_heif_opener
 from datetime import datetime
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 # Register HEIF opener once at module level to handle all HEIC/HEIF formats
 register_heif_opener()
