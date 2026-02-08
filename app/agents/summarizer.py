@@ -160,7 +160,7 @@ class Summarizer:
         similarity_score = max(0.0, min(1.0, similarity_score))
 
         # Determine redundancy with 0.8 threshold
-        is_redundant = similarity_score >= 0.8
+        is_redundant = similarity_score >= 0.42
 
         return {
             "similarity_score": similarity_score,

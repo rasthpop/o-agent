@@ -20,10 +20,9 @@ def main():
 
 
 def run_test_loop():
-
-    path = "app/images/20230920_081157.jpg"
+    path = "app/images/nice.jpg"
     print(f"Running test loop with image: {path}")
-    features, img, metadata = extract_json_description_and_metadata(path)
+    features, _, metadata = extract_json_description_and_metadata(path)
     print("Extracted features:")
     print(features)
     print("Extracted metadata:")
@@ -32,76 +31,178 @@ def run_test_loop():
     db = InvestigationDB(initial_photo=path, initial_text=features, metadata=metadata)
 
     planner = PlannerAgent(client, db, model=settings.default_model)
-    agent = Detective(
+    detective = Detective(
+        db=db,
         tools=[
             MainDBTool(db),
             WebSearchTool(),
             WebScraperTool(),
             OSMLookupTool(),
             PlonkitSearchTool(),
-        ]
+        ],
     )
     summarizer = Summarizer(client, db, model=settings.default_model)
 
-    planner_response = planner.plan(db)
-    print("Planner response:")
-    print(planner_response)
+    max_outer_loops = 10  # Maximum number of planner-detective-summarizer cycles
+    investigation_complete = False
+    outer_iteration = 0
+    final_summary = None
 
-    print("\nStarting detective agent execution...")
+    print("\n" + "=" * 80)
+    print("STARTING INVESTIGATION PIPELINE")
+    print("Architecture: PLANNER  DETECTIVE  SUMMARIZER  PLANNER")
+    print("=" * 80)
 
-    detective_response = agent.investigate_with_plan(planner_response)
+    while not investigation_complete and outer_iteration < max_outer_loops:
+        outer_iteration += 1
 
-    print("\n" + "=" * 60)
-    print("INVESTIGATION COMPLETE")
-    print("=" * 60)
-    print(f"Status: {detective_response['status']}")
-    print(f"Total Steps: {detective_response['total_steps']}")
-    print(f"Iterations: {detective_response['iterations']}")
+        print(f"\n{'=' * 80}")
+        print(f"PIPELINE CYCLE {outer_iteration}/{max_outer_loops}")
+        print(f"{'=' * 80}")
 
-    if detective_response["error"]:
-        print(f"Error: {detective_response['error']}")
+        # ===== PHASE 1: PLANNER =====
+        # Planner analyzes current state and creates investigation strategy
+        print("\n[PHASE 1: PLANNER]")
+        print("Analyzing investigation state and creating plan...")
+        planner_response = planner.plan(iteration=outer_iteration - 1)
 
-    print("\n--- EXECUTION LOG ---")
-    for log in detective_response["execution_log"]:
-        print(f"\nIteration {log['iteration']}:")
-        print(f"  Reasoning: {log['agent_reasoning'][:200]}...")
-        print(f"  Tool Calls: {len(log['tool_calls'])}")
-        for tc in log["tool_calls"]:
-            status = "✓" if tc["success"] else "✗"
-            print(f"    {status} {tc['tool_name']}: {tc['error'] if tc['error'] else 'Success'}")
+        print(f"✓ Plan created with {len(planner_response.get('next_steps', []))} steps")
+        print(f"  State summary: {planner_response.get('state', '')[:200]}...")
 
-    print("\n--- FINAL RESPONSE ---")
-    print(detective_response["final_response"])
+        # Check if planner indicates investigation is complete
+        if not planner_response.get("next_steps"):
+            print("\n✓ PLANNER: No more investigation steps needed. Investigation complete.")
+            investigation_complete = True
+            break
 
-    # Generate summary with key points
-    print("\n" + "=" * 60)
-    print("GENERATING SUMMARY")
-    print("=" * 60)
+        # ===== PHASE 2: DETECTIVE =====
+        # Detective executes plan within iteration limit (max 10 iterations)
+        # Detective is self-contained and must complete within its iteration budget
+        print("\n[PHASE 2: DETECTIVE]")
+        print("Executing investigation plan (max 10 iterations per cycle)...")
+        detective_response = detective.investigate_with_plan(planner_response, max_iterations=10)
 
-    summary = summarizer.summarize(detective_response, check_similarity=True)
+        # Detective execution summary
+        print("\n✓ Detective execution complete:")
+        print(f"  Status: {detective_response['status']}")
+        print(f"  Iterations used: {detective_response['iterations']}/10")
+        print(f"  Plan steps: {detective_response['total_steps']}")
 
-    print(f"\nSummary: {summary.get('summary', 'N/A')}")
-    print(f"Similarity Score: {summary.get('similarity_score', 0.0):.2f}")
-    print(f"Is Redundant: {summary.get('is_redundant', False)}")
+        if detective_response["status"] == "partial":
+            print(" Warning: Detective hit iteration limit before completing all steps")
+        elif detective_response["status"] == "error":
+            print(f"Error: {detective_response.get('error', 'Unknown error')}")
 
-    print("\n--- KEY POINTS ---")
-    for i, point in enumerate(summary.get("key_points", []), 1):
-        print(f"{i}. [{point.get('category', 'unknown')}] {point.get('finding', '')}")
-        confidence = point.get("confidence", "unknown")
-        source = point.get("source", "unknown")
-        print(f"   Confidence: {confidence} | Source: {source}")
+        # Log tool usage per iteration
+        print("\n  Tool usage summary:")
+        for log in detective_response["execution_log"]:
+            tool_summary = ", ".join([tc["tool_name"] for tc in log["tool_calls"]])
+            print(f"Iteration {log['iteration']}: [{tool_summary}]")
 
-    if summary.get("next_actions"):
-        print("\n--- NEXT ACTIONS ---")
-        for i, action in enumerate(summary.get("next_actions", []), 1):
-            print(f"{i}. {action}")
+        # Detective's final reasoning
+        final_response = detective_response.get("final_response", "")
+        if final_response:
+            print(f"\n  Detective's summary: {final_response[:300]}...")
 
-    # Save summary to database only if not redundant
-    if not summary.get("is_redundant", False):
+        # ===== PHASE 3: SUMMARIZER =====
+        # Summarizer extracts key findings and checks for redundancy
+        print("\n[PHASE 3: SUMMARIZER]")
+        print("Extracting key findings and checking for redundancy...")
+
+        summary = summarizer.summarize(detective_response, check_similarity=True)
+
+        print("Summary generated:")
+        print(f"  Overview: {summary.get('summary', 'N/A')[:150]}...")
+        print(f"  Key points: {len(summary.get('key_points', []))}")
+        print(f"  Similarity score: {summary.get('similarity_score', 0.0):.2f}")
+        print(f"  Is redundant: {summary.get('is_redundant', False)}")
+
+        # Display key points
+        if summary.get("key_points"):
+            print("\n  Key findings this iteration:")
+            for i, point in enumerate(summary.get("key_points", [])[:3], 1):
+                category = point.get("category", "unknown")
+                finding = point.get("finding", "")[:80]
+                confidence = point.get("confidence", "unknown")
+                print(f"{i}. [{category}] {finding}... (confidence: {confidence})")
+
+        # STOP CONDITION: Check if findings are redundant
+        if summary.get("is_redundant", False):
+            print("\n" + "!" * 80)
+            print("STOP CONDITION MET: FINDINGS ARE REDUNDANT")
+            print("Investigation has converged - no new meaningful progress detected.")
+            print(f"Similarity score ({summary.get('similarity_score', 0.0):.2f}) >= 0.8 threshold")
+            print("!" * 80)
+            investigation_complete = True
+            final_summary = summary
+            # Save final summary before breaking
+            db.add_summary(summary)
+            break
+
+        # Save non-redundant summary and continue
         db.add_summary(summary)
-        print("\n✓ Summary saved to database")
+        final_summary = summary
+        print(f"✓ Summary saved to database ({len(db.get_summaries())} total summaries)")
+
+        # ===== LOOP CONTINUATION =====
+        print(
+            f"\n[PIPELINE] Cycle {outer_iteration} complete. "
+            "Findings show progress - continuing to next iteration."
+        )
+
+    # ===== FINAL SUMMARY =====
+    print("\n" + "=" * 80)
+    print("INVESTIGATION PIPELINE COMPLETE")
+    print("=" * 80)
+    print(f"Total pipeline cycles: {outer_iteration}/{max_outer_loops}")
+
+    if investigation_complete:
+        stop_reason = "Redundancy detected (findings converged)"
     else:
-        print("\n⚠ Summary not saved (too similar to previous findings)")
+        stop_reason = "Maximum cycles reached"
+    print(f"Stop reason: {stop_reason}")
+
+    # Display final comprehensive summary
+    if final_summary:
+        print("\n" + "=" * 80)
+        print("FINAL INVESTIGATION SUMMARY")
+        print("=" * 80)
+
+        print("\nOverall Summary:")
+        print(f"  {final_summary.get('summary', 'N/A')}")
+
+        print("\n--- KEY FINDINGS ---")
+        for i, point in enumerate(final_summary.get("key_points", []), 1):
+            print(f"\n{i}. [{point.get('category', 'unknown').upper()}]")
+            print(f"   Finding: {point.get('finding', '')}")
+            print(
+                f"   Confidence: {point.get('confidence', 'unknown')} | "
+                f"Source: {point.get('source', 'unknown')}"
+            )
+
+        if final_summary.get("next_actions"):
+            print("\n--- RECOMMENDED NEXT ACTIONS ---")
+            for i, action in enumerate(final_summary.get("next_actions", []), 1):
+                print(f"{i}. {action}")
+
+        # Display investigation progression
+        all_summaries = db.get_summaries()
+        print("\n--- INVESTIGATION PROGRESSION ---")
+        print(f"Total summaries: {len(all_summaries)}")
+        for idx, summ in enumerate(all_summaries):
+            similarity = summ.get("similarity_score", 0.0)
+            print(
+                f"  Iteration {idx}: {summ.get('summary', 'N/A')[:100]}... "
+                f"(similarity: {similarity:.2f})"
+            )
+
+    print("\n--- DATABASE STATE ---")
+    print(f"Validated searches: {len(db.get_validated_searches())}")
+    print(f"Summaries: {len(db.get_summaries())}")
+    print(f"User corrections: {len(db.get_wrongs())}")
+    print(f"Context hints: {len(db.get_context())}")
+
+    return final_summary
 
 
 if __name__ == "__main__":

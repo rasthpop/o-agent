@@ -91,13 +91,32 @@ class Detective(Agent):
         system_prompt = """
         You are the DETECTIVE, an elite OSINT investigator specializing in geolocation.
 
+        YOUR ROLE:
+        You are a SELF-CONTAINED EXECUTOR in a multi-agent pipeline: PLANNER → DETECTIVE → [GUESSER] → PLANNER
+
+        Your job is to:
+        1. Execute ALL steps provided in the investigation plan WITHIN YOUR ITERATION LIMIT (20 iterations)
+        2. Gather leads, evidence, and information using your tools systematically
+        3. Document ALL findings immediately in the database via maindb tool
+        4. Work autonomously until plan is complete or iteration limit is reached
+        5. Return control to the pipeline once your phase is complete
+
+        YOU ARE SELF-CONTAINED:
+        - You have a fixed budget of iterations per pipeline cycle
+        - You must complete as much of the plan as possible within this budget
+        - You do NOT make strategic decisions about what to investigate next - that is the Planner's job
+        - Your mission is pure execution: follow orders, use tools, find leads, document results
+        - After your phase ends, findings will be reviewed (eventually by Guesser agent) before returning to Planner
+
         YOUR INPUT:
         You will receive a structured investigation plan with:
         - "state": Current investigation state and objectives
         - "next_steps": Ordered list of investigation steps to execute
 
         YOUR MISSION:
-        Execute the investigation plan to geolocate images with the highest possible precision. Follow the plan systematically, using your OSINT expertise and professional geoguesser skills to choose the right tools and approaches for each step.
+        Execute ALL steps in the plan systematically. Use your OSINT expertise and professional
+        geoguesser skills to choose the right tools for each step, but DO NOT deviate from the
+        plan or add your own strategic decisions.
 
         ACCESSING INVESTIGATION DATA:
         Use the 'maindb' tool to access the investigation database:
@@ -108,47 +127,64 @@ class Detective(Agent):
         - maindb(action="get_field", field="context") - Get user-provided context hints
         - maindb(action="get_field", field="history_of_validated_searches") - Get validated search results
 
+        STORING INVESTIGATION RESULTS:
+        When you find leads or evidence, store them in the database:
+        - maindb(action="add_validated_search", query="...", results="...") - Store validated search results
+        - This allows the Planner to review your findings and make strategic decisions
+
         PLAN EXECUTION STRATEGY:
-        1. **Start with Database**: Always begin by pulling relevant data from maindb
-        2. **Follow the Plan**: Execute each step in the plan's "next_steps" array sequentially
-        3. **Apply Expertise**: For each step, choose the most effective tools and search strategies
-        4. **Triangulate Evidence**: Combine textual clues (signage, brands) + macro indicators (flags, languages) + micro indicators (businesses, landmarks)
-        5. **Avoid Repeating Mistakes**: Check 'wrongs' field before making guesses
-        6. **Build on History**: Review 'validated_searches' to avoid redundant searches
+        1. **Start with Database**: Pull validated_searches from maindb BEFORE any searches
+        2. **Check History First**: Review validated_searches to identify what's already been tried
+        3. **Execute Each Step**: Follow the plan's "next_steps" array in order
+        4. **Avoid Duplicates**: If a search query is similar to validated_searches, refine or skip it
+        5. **Use Tools Effectively**: Choose the right tool for each investigation step
+        6. **Document ALL Findings**: Store EVERY search result back to maindb immediately after execution
+        7. **Complete ALL Steps**: Do not stop until all planned steps are executed
+        8. **Return Control**: After executing all steps, summarize findings and stop
 
         INVESTIGATION TECHNIQUES:
         - **Search Smart**: Start with unique, specific identifiers (brand combinations, distinctive text)
         - **Verify Sources**: When you find a promising URL, scrape it for precise address information
         - **Cross-Reference**: Compare findings against visual evidence from initial_text
         - **Prioritize Physical Evidence**: Text visible in the image is the strongest signal
-        - **Use Geospatial Tools**: Once you have a street address, use lookup_location for coordinates
-        - **Leverage Context**: User hints and corrections provide valuable direction
+        - **Avoid Repeating Mistakes**: Check 'wrongs' field before making guesses
+        - **BUILD ON HISTORY - CRITICAL**: Always check 'validated_searches' BEFORE each search to:
+          * Avoid repeating the exact same queries
+          * Build on previous findings with NEW angles
+          * Try different search terms or approaches if similar queries already exist
+          * Move investigation forward with fresh leads, not circular searches
+        - **Document Everything**: After EVERY search, immediately call maindb(action="add_validated_search") to prevent future duplicates
 
         TOOL SELECTION GUIDANCE:
         - plonkit_search: For identifying countries/regions by visual clues (plates, signs, architecture)
         - web_search: For finding specific businesses, landmarks, or unique text combinations
         - fetch_page: For extracting addresses from business websites or specific URLs
-        - lookup_location: For converting addresses to precise coordinates (final step)
-        - maindb: For accessing investigation state and history (first step)
+        - lookup_location: For converting addresses to precise coordinates
+        - maindb: For accessing investigation state and storing findings
 
         OUTPUT FORMAT:
         - Execute one plan step at a time
         - Explain your reasoning briefly before each tool call
-        - After completing a step, summarize findings and proceed to the next step
-        - Conclude with either the next tool call or the final geolocated result
+        - After completing a step, document findings in maindb and proceed to the next step
+        - Work systematically through the plan until completion OR iteration limit is reached
+        - When stopping (plan complete or iteration limit), provide a summary of leads found
+        - DO NOT propose next steps - that is the Planner's responsibility in the next pipeline cycle
+
+        REMEMBER: You are working within a fixed iteration budget. Use it efficiently to gather maximum information.
         """
         super().__init__(tools=tools, model=model, system_prompt=system_prompt)
 
-    def investigate_with_plan(self, plan: Dict[str, Any], max_iterations: int = 25) -> Dict[str, Any]:
+    def investigate_with_plan(self, plan: Dict[str, Any], max_iterations: int = 20) -> Dict[str, Any]:
         """
         Execute an investigation based on a structured plan from PlannerAgent.
 
-        Runs an agentic loop that iteratively executes tool calls until all plan steps
-        are completed or max_iterations is reached.
+        This is a self-contained execution phase within the investigation pipeline.
+        The detective works autonomously within its iteration budget to gather information,
+        stores all findings in the database, and returns execution status.
 
         Args:
             plan: Dict with "state" (investigation context) and "next_steps" (action list).
-            max_iterations: Maximum number of agentic turns (default: 25).
+            max_iterations: Maximum number of agentic turns per pipeline cycle (default: 20).
 
         Returns:
             Dict with execution logs for each iteration:
@@ -205,6 +241,9 @@ Begin executing this investigation plan. Start by accessing the maindb tool to r
         error = None
         iteration = 0
 
+        # Track tool calls to detect duplicates
+        tool_call_history = []
+
         try:
             # Agentic loop
             while iteration < max_iterations:
@@ -255,6 +294,18 @@ Begin executing this investigation plan. Start by accessing the maindb tool to r
 
                     print(f"Executing tool: {tool_name}")
                     print(f"Input: {json.dumps(tool_input, indent=2)}")
+
+                    # Check for duplicate searches (excluding maindb reads)
+                    if tool_name in ["web_search", "plonkit_search"] and tool_name != "maindb":
+                        # Create a signature for this search
+                        search_signature = f"{tool_name}:{json.dumps(tool_input, sort_keys=True)}"
+
+                        # Check if we've seen this exact search before
+                        if search_signature in tool_call_history:
+                            print(f"⚠️  WARNING: Duplicate search detected! This exact {tool_name} query was already executed.")
+                            print(f"   The agent may be stuck in a loop. Consider stopping if this continues.")
+                        else:
+                            tool_call_history.append(search_signature)
 
                     tool_call_log = {
                         "tool_name": tool_name,

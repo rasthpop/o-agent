@@ -20,7 +20,6 @@ Return a JSON object with:
         {
             "category": "location|evidence|hypothesis|contradiction",
             "finding": "Specific finding or conclusion",
-            "confidence": "high|medium|low",
             "source": "Tool or method that produced this finding"
         }
     ],
