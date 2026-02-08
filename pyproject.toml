@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "anthropic>=0.78.0",
+    "beautifulsoup4>=4.14.3",
     "ddgs>=9.10.0",
     "duckduckgo-search>=8.1.1",
     "langchain>=1.2.9",
@@ -28,7 +29,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "mypy>=1.19.1",
     "pre-commit>=4.5.1",
     "ruff>=0.15.0",
 ]
@@ -40,9 +40,3 @@ target-version = "py313"
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
 ignore = []
-
-[tool.mypy]
-python_version = "3.13"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false
