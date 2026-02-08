@@ -107,19 +107,22 @@ If provided, only these countries will be searched. Useful for narrowing down se
         }
 
     def _search_country(
-        self, country: dict[str, Any], keywords: list[str]
+        self,
+        country: dict[str, Any],
+        keywords: list[str],
+        keyword_patterns: list[re.Pattern],
     ) -> dict[str, Any] | None:
         """Search a single country entry for keyword matches.
 
         Args:
             country: Country entry from database.
             keywords: List of keywords to search for.
+            keyword_patterns: Pre-compiled regex patterns for keywords.
 
         Returns:
             Dict with country info and matching sections, or None if no matches.
         """
         matching_sections = []
-        keyword_patterns = [re.compile(re.escape(kw), re.IGNORECASE) for kw in keywords]
 
         for section in country.get("sections", []):
             description = section.get("description", "")
@@ -179,6 +182,9 @@ If provided, only these countries will be searched. Useful for narrowing down se
 
             logger.info(f"Searching Plonkit database for keywords: {keywords}")
 
+            # Compile regex patterns once for efficiency
+            keyword_patterns = [re.compile(re.escape(kw), re.IGNORECASE) for kw in keywords]
+
             # Filter database if country filter provided
             search_database = self.database
             if country_filter:
@@ -194,7 +200,7 @@ If provided, only these countries will be searched. Useful for narrowing down se
             # Search each country
             results = []
             for country in search_database:
-                match_result = self._search_country(country, keywords)
+                match_result = self._search_country(country, keywords, keyword_patterns)
                 if match_result:
                     results.append(match_result)
 

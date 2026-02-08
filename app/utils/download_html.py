@@ -3,11 +3,14 @@ import logging
 import os
 import random
 import time
+from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
 # Configuration
-INPUT_FILE = "countries.json"
+SCRIPT_DIR = Path(__file__).parent
+APP_DIR = SCRIPT_DIR.parent
+INPUT_FILE = str(APP_DIR / "data" / "countries.json")
 OUTPUT_DIRECTORY = "countries_html"
 BASE_URL = "https://www.plonkit.net/"
 

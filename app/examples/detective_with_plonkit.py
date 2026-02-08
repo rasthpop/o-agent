@@ -1,5 +1,6 @@
 """Example: Detective agent using PlonkitSearchTool for geolocation."""
 
+import json
 import logging
 
 from anthropic import Anthropic
@@ -123,11 +124,12 @@ Search for relevant keywords and provide your top location guesses with confiden
                             logger.info(f"Found {result.data.get('total_matches', 0)} matches")
 
                         # Add tool result to messages
+                        tool_content = result.data if result.success else {"error": result.error}
                         tool_results.append(
                             {
                                 "type": "tool_result",
                                 "tool_use_id": block.id,
-                                "content": str(result.data if result.success else result.error),
+                                "content": json.dumps(tool_content, ensure_ascii=False),
                             }
                         )
 

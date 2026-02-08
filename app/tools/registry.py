@@ -1,6 +1,6 @@
 from typing import Any
 
-from tools.base_tool import BaseTool
+from app.tools.base_tool import BaseTool
 
 
 def create_tool_schema(tool: BaseTool) -> dict[str, Any]:
