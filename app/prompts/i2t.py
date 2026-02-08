@@ -51,6 +51,22 @@ ENV_INFRASTRUCTURE_PROMPT = """
 Analyze the image for visual geolocation clues. DO NOT extract any text. Focus only on physical attributes, colors, and shapes.
 Output ONLY valid JSON. No markdown, no code fences. If a field is not observable, use "not visible".
 
+
+Analyze the image for sun position, shadows, and sky clues to estimate hemisphere, latitude band, and camera heading.
+DO NOT extract any text. Output ONLY valid JSON. No markdown, no code fences. If not determinable, use "unknown".
+
+
+IF GEODATA IS GIVEN FROM IMAGE METADATAUSE THAT GEOLOCATION DATA INSTEAD!!!
+
+
+Guidance:
+- sun_altitude_estimate: near horizon ~5deg, moderate ~30deg, high ~60deg, near zenith ~80+deg
+- shadow_length_vs_object_height: 2x=low sun ~27deg, 1x=~45deg, 0.5x=~63deg, none=zenith
+- hemisphere: Sun in southern sky=Northern Hemisphere, Sun in northern sky=Southern Hemisphere. Polaris visible=North. Southern Cross=South. Satellite dishes pointing south=Northern Hemisphere.
+- latitude_band: tropical, subtropical, mid-latitude, high-latitude, polar
+- confidence: high/medium/low with brief reason
+
+
 Guidance:
 - car_type: sedan, pickup, SUV, blurred
 - surface: asphalt, concrete, red soil, gravel, potholes
@@ -93,33 +109,7 @@ Return ONLY this JSON:
     "notable_objects": "",
     "satellite_dish_direction": "",
     "driving_side": ""
-  }
-}
-
-"""
-
-
-# =============================================================================
-# CATEGORY 2: CELESTIAL & SHADOW ANALYSIS
-# =============================================================================
-ENV_CELESTIAL_PROMPT = """
-Analyze the image for sun position, shadows, and sky clues to estimate hemisphere, latitude band, and camera heading.
-DO NOT extract any text. Output ONLY valid JSON. No markdown, no code fences. If not determinable, use "unknown".
-
-
-IF GEODATA IS GIVEN FROM IMAGE METADATAUSE THAT GEOLOCATION DATA INSTEAD!!!
-
-
-Guidance:
-- sun_altitude_estimate: near horizon ~5deg, moderate ~30deg, high ~60deg, near zenith ~80+deg
-- shadow_length_vs_object_height: 2x=low sun ~27deg, 1x=~45deg, 0.5x=~63deg, none=zenith
-- hemisphere: Sun in southern sky=Northern Hemisphere, Sun in northern sky=Southern Hemisphere. Polaris visible=North. Southern Cross=South. Satellite dishes pointing south=Northern Hemisphere.
-- latitude_band: tropical, subtropical, mid-latitude, high-latitude, polar
-- confidence: high/medium/low with brief reason
-
-Return ONLY this JSON:
-
-{
+  },
   "sun_and_shadows": {
     "sun_visible": "",
     "sun_position_in_frame": "",
@@ -132,21 +122,18 @@ Return ONLY this JSON:
     "time_of_day_estimate": "",
     "moon_visible_and_phase": "",
     "stars_visible": ""
-  },
-  "derived_estimates": {
-    "estimated_camera_heading": "",
-    "hemisphere": "",
-    "latitude_band": "",
-    "season_estimate": "",
-    "confidence": ""
-  }
+  } 
 }
+
+
+
+
 
 """
 
 
 # =============================================================================
-# CATEGORY 3: ARCHITECTURE, CULTURE & REGION ESTIMATION
+# CATEGORY 2: ARCHITECTURE, CULTURE & REGION ESTIMATION
 # =============================================================================
 ENV_ARCHITECTURE_PROMPT = """
 Analyze the image for architectural and cultural geolocation clues. DO NOT extract any text. Focus on physical attributes, colors, shapes, and styles.
