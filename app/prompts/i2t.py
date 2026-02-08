@@ -62,8 +62,6 @@ IF GEODATA IS GIVEN FROM IMAGE METADATAUSE THAT GEOLOCATION DATA INSTEAD!!!
 Guidance:
 - sun_altitude_estimate: near horizon ~5deg, moderate ~30deg, high ~60deg, near zenith ~80+deg
 - shadow_length_vs_object_height: 2x=low sun ~27deg, 1x=~45deg, 0.5x=~63deg, none=zenith
-- hemisphere: Sun in southern sky=Northern Hemisphere, Sun in northern sky=Southern Hemisphere. Polaris visible=North. Southern Cross=South. Satellite dishes pointing south=Northern Hemisphere.
-- latitude_band: tropical, subtropical, mid-latitude, high-latitude, polar
 - confidence: high/medium/low with brief reason
 
 
