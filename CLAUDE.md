@@ -55,7 +55,6 @@ uv run pre-commit run --all-files
 # Run specific checks
 uv run ruff check .
 uv run ruff format .
-uv run mypy .
 ```
 
 ## Architecture
@@ -133,6 +132,14 @@ Provides dict-like interface: `db["key"]`, `db.keys()`, `db.to_dict()`, etc.
 - `create_tool_schema()` - Converts BaseTool to Claude API tool schema
 - `register_tools()` - Batch registration returning (schemas, tool_map)
 
+**PlonkitSearchTool** (`app/tools/plonkit_search/`):
+- Searches Plonkit geolocation database (`app/data/plonkit_full_database.json`)
+- Database contains 200+ countries with detailed visual identification clues
+- Search by keywords (license plates, road signs, vegetation, architecture, language)
+- Returns matching countries with relevant sections and confidence scores
+- Supports filtered search (limit to specific countries) and result limiting
+- Usage: `tool.execute(keywords=["yellow plate", "cyrillic"], max_results=10)`
+
 ### Prompts (`app/prompts/`)
 
 Agents use prompts from this directory:
@@ -141,7 +148,6 @@ Agents use prompts from this directory:
 
 ## Code Quality
 
-- Pre-commit hooks: **ruff** (lint/format) + **mypy** (type check)
+- Pre-commit hooks: **ruff** (lint/format)
 - Ruff config: 100 char line length, Python 3.13 target
-- Mypy: `--ignore-missing-imports` enabled for external dependencies
 - All code must pass checks before commit
