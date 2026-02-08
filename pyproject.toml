@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "anthropic>=0.78.0",
+    "beautifulsoup4>=4.14.3",
     "langchain>=1.2.9",
     "langchain-core>=1.2.9",
     "langgraph>=1.0.8",
