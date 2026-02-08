@@ -4,7 +4,7 @@ from app.tools.image_to_text.metadata import extract_image_metadata_for_agent
 from app.utils.claude_to_json import extract_json_from_response
 
 from app.config import settings, create_anthropic_client
-from app.prompts.i2t import TEXT_PASS_PROMPT, ENV_PASS_PROMPT
+from app.prompts.i2t import TEXT_PASS_PROMPT, ENV_ARCHITECTURE_PROMPT, ENV_INFRASTRUCTURE_PROMPT
 
 client = create_anthropic_client()
 
@@ -50,15 +50,23 @@ def image_to_geoguessr_features(image_base64, media_type="image/jpeg"):
         media_type,
         TEXT_PASS_PROMPT
     )
-    environment_features = _run_claude_vision(
+    infrastructure_features = _run_claude_vision(
         image_base64,
         media_type,
-        ENV_PASS_PROMPT
+        ENV_INFRASTRUCTURE_PROMPT
     )
+    architecture_features = _run_claude_vision(
+        image_base64,
+        media_type,
+        ENV_ARCHITECTURE_PROMPT
+    )
+
 
     result = {
         "textual_features": textual_features,
-        "environment_features": environment_features,
+        "architecture_features": architecture_features,
+        "infrastructure_features": infrastructure_features,
+        
         "meta": {
             "extraction_warnings": []
         }
