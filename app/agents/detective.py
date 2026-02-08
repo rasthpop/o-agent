@@ -174,7 +174,7 @@ class Detective(Agent):
         """
         super().__init__(tools=tools, model=model, system_prompt=system_prompt)
 
-    def investigate_with_plan(self, plan: Dict[str, Any], max_iterations: int = 8) -> Dict[str, Any]:
+    def investigate_with_plan(self, plan: Dict[str, Any], max_iterations: int = 20) -> Dict[str, Any]:
         """
         Execute an investigation based on a structured plan from PlannerAgent.
 

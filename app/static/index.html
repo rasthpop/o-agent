@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>o-agent | OSINT Investigation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #14b8a6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #14b8a6;
+            color: white;
+            padding: 32px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .content {
+            padding: 32px;
+        }
+
+        .upload-area {
+            border: 3px dashed #14b8a6;
+            border-radius: 12px;
+            padding: 48px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f0fdfa;
+        }
+
+        .upload-area:hover {
+            border-color: #0d9488;
+            background: #ccfbf1;
+        }
+
+        .upload-area.dragover {
+            border-color: #0d9488;
+            background: #99f6e4;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .upload-text {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            font-size: 14px;
+            color: #666;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .image-preview {
+            display: none;
+            margin-top: 32px;
+            text-align: center;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-container {
+            display: none;
+            margin-top: 32px;
+        }
+
+        .progress-phase {
+            font-size: 14px;
+            color: #14b8a6;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .progress-message {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 16px;
+            min-height: 28px;
+        }
+
+        .progress-lead {
+            background: #f0fdfa;
+            border-left: 4px solid #14b8a6;
+            padding: 16px;
+            margin-bottom: 16px;
+            font-size: 16px;
+            color: #444;
+            font-style: italic;
+            border-radius: 4px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #14b8a6;
+            transition: width 0.3s ease;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .terminal-container {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .terminal-line {
+            color: #00ff00;
+            margin: 4px 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .terminal-line.extract {
+            color: #00d4ff;
+        }
+
+        .terminal-line.plan {
+            color: #ffaa00;
+        }
+
+        .terminal-line.detective {
+            color: #ff00ff;
+        }
+
+        .terminal-line.summarize {
+            color: #00ff88;
+        }
+
+        .terminal-line.complete {
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        .terminal-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-container::-webkit-scrollbar-track {
+            background: #0a0a0a;
+            border-radius: 4px;
+        }
+
+        .terminal-container::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+
+        .terminal-container::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+
+        .result-container {
+            display: none;
+            margin-top: 32px;
+        }
+
+        .result-summary {
+            background: #f0fdfa;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .map-container {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .map-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .map-placeholder {
+            padding: 48px;
+            text-align: center;
+            color: #999;
+        }
+
+        .result-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+        }
+
+        .result-text {
+            font-size: 16px;
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .key-points {
+            list-style: none;
+        }
+
+        .key-point {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 4px solid #14b8a6;
+        }
+
+        .key-point-category {
+            font-size: 12px;
+            color: #14b8a6;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .key-point-finding {
+            font-size: 15px;
+            color: #333;
+            line-height: 1.5;
+        }
+
+
+        .reset-button {
+            background: #14b8a6;
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .reset-button:hover {
+            background: #0d9488;
+            transform: translateY(-2px);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee;
+            border-left: 4px solid #e44;
+            padding: 16px;
+            border-radius: 4px;
+            color: #c33;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 o-agent</h1>
+            <p>Multi-Agent OSINT Investigation System</p>
+        </div>
+
+        <div class="content">
+            <!-- Upload Area -->
+            <div id="uploadArea" class="upload-area">
+                <div class="upload-icon">📸</div>
+                <div class="upload-text">Drop an image here or click to upload</div>
+                <div class="upload-hint">Supports JPG, PNG, HEIF, HEIC</div>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+
+            <!-- Image Preview -->
+            <div id="imagePreview" class="image-preview">
+                <img id="previewImg" src="" alt="Uploaded image">
+            </div>
+
+            <!-- Progress Display -->
+            <div id="progressContainer" class="progress-container">
+                <div class="progress-phase" id="progressPhase">INITIALIZING</div>
+                <div class="progress-message" id="progressMessage">Starting investigation...</div>
+                <div id="progressLead" class="progress-lead" style="display: none;"></div>
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" id="progressBarFill" style="width: 0%"></div>
+                </div>
+
+                <!-- Terminal View -->
+                <div id="terminalContainer" class="terminal-container">
+                    <div class="terminal-line">o-agent terminal output</div>
+                    <div class="terminal-line">═══════════════════════════</div>
+                </div>
+            </div>
+
+            <!-- Results Display -->
+            <div id="resultContainer" class="result-container">
+                <div id="mapContainer" class="map-container"></div>
+
+                <div class="result-summary">
+                    <div class="result-title">Investigation Summary</div>
+                    <div class="result-text" id="resultSummary"></div>
+                </div>
+
+                <div class="result-title">Key Findings</div>
+                <ul class="key-points" id="keyPoints"></ul>
+
+                <button class="reset-button" onclick="resetInvestigation()">
+                    Start New Investigation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressPhase = document.getElementById('progressPhase');
+        const progressMessage = document.getElementById('progressMessage');
+        const progressLead = document.getElementById('progressLead');
+        const progressBarFill = document.getElementById('progressBarFill');
+        const terminalContainer = document.getElementById('terminalContainer');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultSummary = document.getElementById('resultSummary');
+        const keyPoints = document.getElementById('keyPoints');
+        const mapContainer = document.getElementById('mapContainer');
+
+        // Phase to progress percentage mapping
+        const phaseProgress = {
+            'extracting': 20,
+            'planning': 40,
+            'investigating': 70,
+            'summarizing': 90,
+            'complete': 100
+        };
+
+        // Upload area interactions
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        async function handleFile(file) {
+            // Show image preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                imagePreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            // Hide upload area, show progress
+            uploadArea.style.display = 'none';
+            progressContainer.style.display = 'block';
+            resultContainer.style.display = 'none';
+
+            // Clear terminal
+            terminalContainer.innerHTML = `
+                <div class="terminal-line">o-agent terminal output</div>
+                <div class="terminal-line">═══════════════════════════</div>
+            `;
+
+            // Upload file
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/investigate', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                const investigationId = data.investigation_id;
+
+                // Start listening to progress stream
+                streamProgress(investigationId);
+
+            } catch (error) {
+                showError(`Failed to start investigation: ${error.message}`);
+            }
+        }
+
+        function streamProgress(investigationId) {
+            const eventSource = new EventSource(`/api/progress/${investigationId}`);
+
+            eventSource.onmessage = (event) => {
+                const update = JSON.parse(event.data);
+
+                // Update phase
+                progressPhase.textContent = update.phase.toUpperCase();
+
+                // Update message
+                progressMessage.textContent = update.message;
+
+                // Update lead if present
+                if (update.current_lead) {
+                    progressLead.textContent = update.current_lead;
+                    progressLead.style.display = 'block';
+                } else {
+                    progressLead.style.display = 'none';
+                }
+
+                // Update progress bar
+                const progress = phaseProgress[update.phase] || 0;
+                progressBarFill.style.width = `${progress}%`;
+
+                // Add terminal output if present
+                if (update.terminal_output) {
+                    appendTerminalLine(update.terminal_output, update.phase);
+                }
+
+                // If complete, show results
+                if (update.complete) {
+                    eventSource.close();
+
+                    if (update.phase === 'error') {
+                        showError(update.message);
+                    } else {
+                        showResults(update.details);
+                    }
+                }
+            };
+
+            eventSource.onerror = (error) => {
+                eventSource.close();
+                showError('Connection lost. Please try again.');
+            };
+        }
+
+        function appendTerminalLine(text, phase) {
+            const line = document.createElement('div');
+            line.className = `terminal-line ${phase}`;
+
+            // Add timestamp
+            const now = new Date();
+            const timestamp = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            line.textContent = `${timestamp} ${text}`;
+
+            terminalContainer.appendChild(line);
+
+            // Auto-scroll to bottom
+            terminalContainer.scrollTop = terminalContainer.scrollHeight;
+        }
+
+        function showResults(details) {
+            progressContainer.style.display = 'none';
+            resultContainer.style.display = 'block';
+
+            const summary = details.final_summary;
+
+            // Display summary text
+            resultSummary.textContent = summary.summary || 'No summary available';
+
+            // Extract and display location on map
+            const locationData = extractLocationFromSummary(summary);
+            if (locationData) {
+                displayMap(locationData.lat, locationData.lng, locationData.name);
+            }
+
+            // Display key points
+            keyPoints.innerHTML = '';
+            const points = summary.key_points || [];
+
+            points.forEach(point => {
+                const li = document.createElement('li');
+                li.className = 'key-point';
+
+                li.innerHTML = `
+                    <div class="key-point-category">${point.category || 'unknown'}</div>
+                    <div class="key-point-finding">${point.finding || ''}</div>
+                `;
+
+                keyPoints.appendChild(li);
+            });
+        }
+
+        function extractLocationFromSummary(summary) {
+            // Try to find location in key_points
+            const locationPoints = summary.key_points?.filter(p => p.category === 'location') || [];
+
+            if (locationPoints.length > 0) {
+                // Use highest confidence location
+                const topLocation = locationPoints.reduce((best, current) => {
+                    const currentScore = confidenceToScore(current.confidence);
+                    const bestScore = confidenceToScore(best.confidence);
+                    return currentScore > bestScore ? current : best;
+                });
+
+                // Try to extract coordinates from source or finding
+                const coords = extractCoordinatesFromText(topLocation.finding + ' ' + (topLocation.source || ''));
+                if (coords) {
+                    return {
+                        lat: coords.lat,
+                        lng: coords.lng,
+                        name: topLocation.finding.split('.')[0] // First sentence
+                    };
+                }
+
+                // If no coordinates, try to geocode the location name
+                return geocodeLocation(topLocation.finding);
+            }
+
+            return null;
+        }
+
+        function extractCoordinatesFromText(text) {
+            // Look for coordinate patterns like "12.345, 67.890" or "lat: 12.345, lng: 67.890"
+            const patterns = [
+                /(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/,
+                /lat(?:itude)?:\s*(-?\d+\.\d+)[\s,]+l(?:on|ng)(?:itude)?:\s*(-?\d+\.\d+)/i,
+                /\((-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\)/
+            ];
+
+            for (const pattern of patterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    return {
+                        lat: parseFloat(match[1]),
+                        lng: parseFloat(match[2])
+                    };
+                }
+            }
+
+            return null;
+        }
+
+        function geocodeLocation(locationText) {
+            // Extract likely country/city name (capitalized words)
+            const words = locationText.split(' ');
+            const locations = words.filter(w => w.length > 3 && w[0] === w[0].toUpperCase());
+
+            if (locations.length > 0) {
+                // Return approximate coordinates for common regions
+                // This is a fallback - ideally we'd use a geocoding API
+                const approximates = {
+                    'Bosnia': { lat: 43.9159, lng: 17.6791, name: 'Bosnia and Herzegovina' },
+                    'Serbia': { lat: 44.0165, lng: 21.0059, name: 'Serbia' },
+                    'Croatia': { lat: 45.1, lng: 15.2, name: 'Croatia' },
+                    'Poland': { lat: 51.9194, lng: 19.1451, name: 'Poland' },
+                    'Romania': { lat: 45.9432, lng: 24.9668, name: 'Romania' },
+                    'Bulgaria': { lat: 42.7339, lng: 25.4858, name: 'Bulgaria' },
+                    'Russia': { lat: 61.5240, lng: 105.3188, name: 'Russia' },
+                    'Ukraine': { lat: 48.3794, lng: 31.1656, name: 'Ukraine' }
+                };
+
+                for (const [country, coords] of Object.entries(approximates)) {
+                    if (locationText.includes(country)) {
+                        return coords;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        function confidenceToScore(confidence) {
+            const mapping = { 'high': 3, 'medium': 2, 'low': 1 };
+            return mapping[confidence?.toLowerCase()] || 0;
+        }
+
+        function displayMap(lat, lng, locationName) {
+            // Create static map URL using OpenStreetMap's staticmap service
+            // Using mapbox static API style but with OSM tiles via staticmap.openstreetmap.de
+            const zoom = 8;
+            const width = 800;
+            const height = 400;
+
+            // Use OpenStreetMap Static Map API
+            const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=${zoom}&size=${width}x${height}&maptype=mapnik&markers=${lat},${lng},red-pushpin`;
+
+            mapContainer.innerHTML = `
+                <img src="${mapUrl}"
+                     alt="Map showing ${locationName || 'estimated location'}"
+                     class="map-image"
+                     onerror="this.parentElement.innerHTML='<div class=\\'map-placeholder\\'>📍 Location: ${locationName || 'Unknown'}<br>Coordinates: ${lat.toFixed(4)}, ${lng.toFixed(4)}</div>'">
+            `;
+        }
+
+        function showError(message) {
+            progressContainer.style.display = 'none';
+            imagePreview.style.display = 'none';
+            uploadArea.style.display = 'block';
+
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+
+            uploadArea.parentElement.insertBefore(errorDiv, uploadArea.nextSibling);
+
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+
+        function resetInvestigation() {
+            uploadArea.style.display = 'block';
+            imagePreview.style.display = 'none';
+            progressContainer.style.display = 'none';
+            resultContainer.style.display = 'none';
+            progressLead.style.display = 'none';
+            progressBarFill.style.width = '0%';
+            fileInput.value = '';
+            mapContainer.innerHTML = '';
+
+            // Clear terminal
+            terminalContainer.innerHTML = `
+                <div class="terminal-line">o-agent terminal output</div>
+                <div class="terminal-line">═══════════════════════════</div>
+            `;
+        }
+    </script>
+</body>
+</html>

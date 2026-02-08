@@ -46,8 +46,12 @@ uv run pre-commit install
 ## Development Commands
 
 ```bash
-# Run application
+# Run CLI application
 uv run python -m app.main
+
+# Run web interface
+uv run python -m app.web
+# Then open http://localhost:8000 in your browser
 
 # Run pre-commit hooks manually
 uv run pre-commit run --all-files
@@ -56,6 +60,27 @@ uv run pre-commit run --all-files
 uv run ruff check .
 uv run ruff format .
 ```
+
+## Web Interface (`app/web.py`)
+
+Minimalist web-based interface for investigations:
+- **Photo Upload**: Drag-and-drop or click to upload images
+- **Real-time Progress**: Server-Sent Events (SSE) stream updates during investigation
+- **Progress Phases**: "extracting", "planning", "investigating", "summarizing", "complete"
+- **Tool Tracking**: Shows which tool is being used (e.g., "searching the web", "analyzing geolocation clues")
+- **Current Lead Display**: After summarizer runs, shows short lead like "Currently considering Bosnia"
+- **Final Results**: Displays summary text and key findings with categories and confidence levels
+
+**Architecture**:
+- `app/web.py` - FastAPI server with SSE endpoints
+- `app/investigation_runner.py` - Wraps existing pipeline with async progress tracking
+- `app/static/index.html` - Single-page frontend with minimal dependencies (no frameworks)
+
+**Progress Tracking Implementation**:
+- Uses `asyncio.Queue` for thread-safe progress updates
+- Wraps tool `execute()` methods to emit progress before execution
+- Emits updates for each phase transition and tool usage
+- Extracts location leads from summary key_points (highest confidence location finding)
 
 ## Architecture
 
