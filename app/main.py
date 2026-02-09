@@ -20,7 +20,7 @@ def main():
 
 
 def run_test_loop():
-    path = "app/images/podatkova.jpg"
+    path = "app/images/pole.png"
     print(f"Running test loop with image: {path}")
     features, _, metadata = extract_json_description_and_metadata(path)
     print("Extracted features:")
@@ -74,12 +74,12 @@ def run_test_loop():
 
 
         print("\n[PHASE 2: DETECTIVE]")
-        print("Executing investigation plan (max 15 iterations per cycle)...")
-        detective_response = detective.investigate_with_plan(planner_response, max_iterations=15)
+        print("Executing investigation plan (max 10 iterations per cycle)...")
+        detective_response = detective.investigate_with_plan(planner_response, max_iterations=10)
 
         print("\n  Detective execution complete:")
         print(f"  Status: {detective_response['status']}")
-        print(f"  Iterations used: {detective_response['iterations']}/15")
+        print(f"  Iterations used: {detective_response['iterations']}/10")
         print(f"  Plan steps: {detective_response['total_steps']}")
 
         if detective_response["status"] == "partial":

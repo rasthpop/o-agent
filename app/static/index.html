@@ -297,6 +297,89 @@
             line-height: 1.5;
         }
 
+        .location-guess {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            border-left: 4px solid #14b8a6;
+        }
+
+        .location-guess-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #14b8a6;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .location-guess-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .location-guess-coords {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .location-guess-confidence {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        .location-guess-reasoning {
+            font-size: 15px;
+            color: #555;
+            line-height: 1.6;
+            padding-top: 16px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .next-actions {
+            background: #fff8e1;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            border-left: 4px solid #ffa000;
+        }
+
+        .next-actions-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #f57c00;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .next-actions-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .next-action-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 6px;
+            font-size: 15px;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .next-action-item:before {
+            content: "→ ";
+            color: #ffa000;
+            font-weight: bold;
+            margin-right: 8px;
+        }
 
         .reset-button {
             background: #14b8a6;
@@ -387,6 +470,10 @@
                     <div class="result-text" id="resultSummary"></div>
                 </div>
 
+                <div id="locationGuess" class="location-guess" style="display: none;"></div>
+
+                <div id="nextActions" class="next-actions" style="display: none;"></div>
+
                 <div class="result-title">Key Findings</div>
                 <ul class="key-points" id="keyPoints"></ul>
 
@@ -412,6 +499,8 @@
         const resultSummary = document.getElementById('resultSummary');
         const keyPoints = document.getElementById('keyPoints');
         const mapContainer = document.getElementById('mapContainer');
+        const locationGuess = document.getElementById('locationGuess');
+        const nextActions = document.getElementById('nextActions');
 
         // Phase to progress percentage mapping
         const phaseProgress = {
@@ -562,10 +651,27 @@
             // Display summary text
             resultSummary.textContent = summary.summary || 'No summary available';
 
-            // Extract and display location on map
-            const locationData = extractLocationFromSummary(summary);
-            if (locationData) {
-                displayMap(locationData.lat, locationData.lng, locationData.name);
+            // Display location guess and map
+            if (summary.final_guess) {
+                displayLocationGuess(summary.final_guess);
+                displayMap(
+                    summary.final_guess.latitude,
+                    summary.final_guess.longitude,
+                    summary.final_guess.location_name
+                );
+            } else {
+                // Fallback to old extraction method
+                const locationData = extractLocationFromSummary(summary);
+                if (locationData) {
+                    displayMap(locationData.lat, locationData.lng, locationData.name);
+                }
+            }
+
+            // Display next actions
+            if (summary.next_actions && summary.next_actions.length > 0) {
+                displayNextActions(summary.next_actions);
+            } else {
+                nextActions.style.display = 'none';
             }
 
             // Display key points
@@ -669,10 +775,40 @@
             return mapping[confidence?.toLowerCase()] || 0;
         }
 
+        function displayLocationGuess(finalGuess) {
+            locationGuess.style.display = 'block';
+
+            const lat = finalGuess.latitude || 0;
+            const lng = finalGuess.longitude || 0;
+            const name = finalGuess.location_name || 'Unknown location';
+            const confidence = finalGuess.confidence_radius_km || 'Unknown';
+            const reasoning = finalGuess.reasoning || 'No reasoning provided';
+
+            locationGuess.innerHTML = `
+                <div class="location-guess-title">📍 Final Location Guess</div>
+                <div class="location-guess-name">${name}</div>
+                <div class="location-guess-coords">Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
+                <div class="location-guess-confidence">Confidence radius: ${confidence} km</div>
+                <div class="location-guess-reasoning">${reasoning}</div>
+            `;
+        }
+
+        function displayNextActions(actions) {
+            nextActions.style.display = 'block';
+
+            const actionsList = actions.map(action =>
+                `<li class="next-action-item">${action}</li>`
+            ).join('');
+
+            nextActions.innerHTML = `
+                <div class="next-actions-title">🎯 Recommended Next Actions</div>
+                <ul class="next-actions-list">${actionsList}</ul>
+            `;
+        }
+
         function displayMap(lat, lng, locationName) {
             // Create static map URL using OpenStreetMap's staticmap service
-            // Using mapbox static API style but with OSM tiles via staticmap.openstreetmap.de
-            const zoom = 8;
+            const zoom = 10;
             const width = 800;
             const height = 400;
 
@@ -683,7 +819,7 @@
                 <img src="${mapUrl}"
                      alt="Map showing ${locationName || 'estimated location'}"
                      class="map-image"
-                     onerror="this.parentElement.innerHTML='<div class=\\'map-placeholder\\'>📍 Location: ${locationName || 'Unknown'}<br>Coordinates: ${lat.toFixed(4)}, ${lng.toFixed(4)}</div>'">
+                     onerror="this.parentElement.innerHTML='<div class=\\'map-placeholder\\'>📍 Location: ${locationName || 'Unknown'}<br>Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>'">
             `;
         }
 
@@ -707,6 +843,8 @@
             progressContainer.style.display = 'none';
             resultContainer.style.display = 'none';
             progressLead.style.display = 'none';
+            locationGuess.style.display = 'none';
+            nextActions.style.display = 'none';
             progressBarFill.style.width = '0%';
             fileInput.value = '';
             mapContainer.innerHTML = '';

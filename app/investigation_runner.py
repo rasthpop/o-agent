@@ -310,7 +310,7 @@ class InvestigationRunner:
         Returns:
             Detective execution response
         """
-        # Run investigation in thread
+        # Run investigation in thread with 20 max iterations
         result = await asyncio.to_thread(detective.investigate_with_plan, plan, max_iterations=20)
 
         # Extract tool usage details from execution log
