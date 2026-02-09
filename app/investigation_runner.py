@@ -39,18 +39,23 @@ class InvestigationRunner:
     and emits progress updates via an async queue.
     """
 
-    def __init__(self, image_path: str):
+    def __init__(self, image_path: str, mode: str = "quick"):
         """
         Initialize investigation runner.
 
         Args:
             image_path: Path to image file to investigate
+            mode: Investigation mode - "quick" (10 iterations) or "deep" (25 iterations)
         """
         self.image_path = image_path
+        self.mode = mode
         self.client = Anthropic(api_key=settings.anthropic_api_key)
         self.progress_queue: asyncio.Queue[ProgressUpdate] = asyncio.Queue()
         self.db: InvestigationDB | None = None
         self.final_summary: dict[str, Any] | None = None
+
+        # Set max iterations based on mode
+        self.max_iterations_per_cycle = 20 if mode == "deep" else 10
 
     async def emit_progress(self, update: ProgressUpdate) -> None:
         """
@@ -310,8 +315,10 @@ class InvestigationRunner:
         Returns:
             Detective execution response
         """
-        # Run investigation in thread with 20 max iterations
-        result = await asyncio.to_thread(detective.investigate_with_plan, plan, max_iterations=20)
+        # Run investigation with mode-specific max iterations
+        result = await asyncio.to_thread(
+            detective.investigate_with_plan, plan, max_iterations=self.max_iterations_per_cycle
+        )
 
         # Extract tool usage details from execution log
         if result.get("execution_log"):

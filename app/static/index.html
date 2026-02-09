@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>o-agent | OSINT Investigation</title>
+    <title>o-agent | GEOINT Investigation</title>
     <style>
         * {
             margin: 0;
@@ -50,6 +50,65 @@
 
         .content {
             padding: 32px;
+        }
+
+        .mode-selector {
+            margin-bottom: 32px;
+        }
+
+        .mode-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .mode-options {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .mode-button {
+            flex: 1;
+            max-width: 240px;
+            background: white;
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .mode-button:hover {
+            border-color: #14b8a6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.2);
+        }
+
+        .mode-button.active {
+            border-color: #14b8a6;
+            background: #f0fdfa;
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+        }
+
+        .mode-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .mode-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .mode-time {
+            font-size: 13px;
+            color: #666;
         }
 
         .upload-area {
@@ -428,10 +487,25 @@
     <div class="container">
         <div class="header">
             <h1>🔍 o-agent</h1>
-            <p>Multi-Agent OSINT Investigation System</p>
+            <p>Agentic GEOINT Investigation System</p>
         </div>
 
         <div class="content">
+            <!-- Mode Selection -->
+            <div id="modeSelector" class="mode-selector">
+                <div class="mode-title">Investigation Mode</div>
+                <div class="mode-options">
+                    <button class="mode-button active" data-mode="quick" id="quickMode">
+                        <div class="mode-name">Quick Search</div>
+                        <div class="mode-time">A couple minutes</div>
+                    </button>
+                    <button class="mode-button" data-mode="deep" id="deepMode">
+                        <div class="mode-name">Deep Research</div>
+                        <div class="mode-time">up to 10-12 minutes</div>
+                    </button>
+                </div>
+            </div>
+
             <!-- Upload Area -->
             <div id="uploadArea" class="upload-area">
                 <div class="upload-icon">📸</div>
@@ -501,6 +575,12 @@
         const mapContainer = document.getElementById('mapContainer');
         const locationGuess = document.getElementById('locationGuess');
         const nextActions = document.getElementById('nextActions');
+        const modeSelector = document.getElementById('modeSelector');
+        const quickModeBtn = document.getElementById('quickMode');
+        const deepModeBtn = document.getElementById('deepMode');
+
+        // Selected investigation mode
+        let selectedMode = 'quick';
 
         // Phase to progress percentage mapping
         const phaseProgress = {
@@ -510,6 +590,19 @@
             'summarizing': 90,
             'complete': 100
         };
+
+        // Mode selection handlers
+        quickModeBtn.addEventListener('click', () => {
+            selectedMode = 'quick';
+            quickModeBtn.classList.add('active');
+            deepModeBtn.classList.remove('active');
+        });
+
+        deepModeBtn.addEventListener('click', () => {
+            selectedMode = 'deep';
+            deepModeBtn.classList.add('active');
+            quickModeBtn.classList.remove('active');
+        });
 
         // Upload area interactions
         uploadArea.addEventListener('click', () => fileInput.click());
@@ -548,7 +641,8 @@
             };
             reader.readAsDataURL(file);
 
-            // Hide upload area, show progress
+            // Hide upload area and mode selector, show progress
+            modeSelector.style.display = 'none';
             uploadArea.style.display = 'none';
             progressContainer.style.display = 'block';
             resultContainer.style.display = 'none';
@@ -559,9 +653,10 @@
                 <div class="terminal-line">═══════════════════════════</div>
             `;
 
-            // Upload file
+            // Upload file with selected mode
             const formData = new FormData();
             formData.append('file', file);
+            formData.append('mode', selectedMode);
 
             try {
                 const response = await fetch('/api/investigate', {
@@ -838,6 +933,7 @@
         }
 
         function resetInvestigation() {
+            modeSelector.style.display = 'block';
             uploadArea.style.display = 'block';
             imagePreview.style.display = 'none';
             progressContainer.style.display = 'none';

@@ -6,7 +6,7 @@ import uuid
 from collections.abc import AsyncIterator
 from pathlib import Path
 
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
 
 from app.investigation_runner import InvestigationRunner
@@ -25,12 +25,15 @@ async def root():
 
 
 @app.post("/api/investigate")
-async def start_investigation(file: UploadFile = File(...)) -> dict[str, str]:
+async def start_investigation(
+    file: UploadFile = File(...), mode: str = Form(default="quick")
+) -> dict[str, str]:
     """
     Start a new investigation with an uploaded image.
 
     Args:
         file: Uploaded image file
+        mode: Investigation mode ("quick" or "deep")
 
     Returns:
         Dict with investigation_id for tracking progress
@@ -47,11 +50,11 @@ async def start_investigation(file: UploadFile = File(...)) -> dict[str, str]:
         content = await file.read()
         f.write(content)
 
-    # Create investigation runner
-    runner = InvestigationRunner(str(file_path))
+    # Create investigation runner with selected mode
+    runner = InvestigationRunner(str(file_path), mode=mode)
     active_investigations[investigation_id] = runner
 
-    return {"investigation_id": investigation_id, "status": "started"}
+    return {"investigation_id": investigation_id, "status": "started", "mode": mode}
 
 
 @app.get("/api/progress/{investigation_id}")
